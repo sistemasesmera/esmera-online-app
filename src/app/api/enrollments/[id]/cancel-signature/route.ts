@@ -14,14 +14,13 @@ export async function POST(
 
   const admin = createAdminClient();
 
-  const { data: enrollment } = await admin
-    .from("enrollments")
-    .select("contracts!enrollment_id(id, docuseal_submission_id)")
-    .eq("id", id)
-    .is("deleted_at", null)
+  const { data: contractRow } = await admin
+    .from("contracts")
+    .select("id, docuseal_submission_id")
+    .eq("enrollment_id", id)
     .single();
 
-  const contract = (enrollment?.contracts as unknown as Array<{ id: string; docuseal_submission_id: string | null }>)?.[0];
+  const contract = contractRow as unknown as { id: string; docuseal_submission_id: string | null } | null;
   if (!contract) return Response.json({ error: "Contrato no encontrado" }, { status: 404 });
 
   const submissionId = contract.docuseal_submission_id;
