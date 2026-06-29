@@ -3,6 +3,7 @@ import {
   Bell,
   BookOpen,
   ClipboardList,
+  Code2,
   GraduationCap,
   LayoutDashboard,
   Target,
@@ -77,6 +78,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Usuarios", href: "/admin/users", icon: UserCog, roles: ["tech"] },
       { label: "Logs", href: "/admin/logs", icon: ClipboardList, roles: ["tech"] },
+      { label: "API", href: "/api", icon: Code2, roles: ["tech"] },
     ],
   },
 ];
