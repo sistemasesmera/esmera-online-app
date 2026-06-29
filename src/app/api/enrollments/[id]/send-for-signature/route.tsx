@@ -83,8 +83,9 @@ export async function POST(
     if (contract.status === "firmado") return Response.json({ error: "El contrato ya está firmado" }, { status: 400 });
 
     const student = raw.students;
-    if (!student?.email && !overrideEmail) return Response.json({ error: "El alumno no tiene email registrado" }, { status: 400 });
-    const recipientEmail = overrideEmail ?? student!.email;
+    if (!student) return Response.json({ error: "Alumno no encontrado" }, { status: 400 });
+    if (!student.email && !overrideEmail) return Response.json({ error: "El alumno no tiene email registrado" }, { status: 400 });
+    const recipientEmail = overrideEmail ?? student.email;
 
     const fontFamily = tryRegisterMontserrat();
     let logoBase64: string | null = null;
