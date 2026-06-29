@@ -436,6 +436,7 @@ export function LeadsClient({
 
       {viewMode === "kanban" && (
         <LeadsKanban
+          key={search}
           leads={leads.filter(
             (l) =>
               !search ||
@@ -480,6 +481,8 @@ export function LeadsClient({
 /* ═══════════════════════════════════════════════════════════════
    Kanban board
 ═══════════════════════════════════════════════════════════════ */
+const KANBAN_STEP = 100;
+
 function LeadsKanban({
   leads,
   canEdit,
@@ -489,6 +492,13 @@ function LeadsKanban({
   canEdit: boolean;
   visibleFields: KanbanField[];
 }) {
+  const [shown, setShown] = useState<Record<string, number>>({});
+
+  function getShown(status: string) { return shown[status] ?? KANBAN_STEP; }
+  function showMore(status: string) {
+    setShown((prev) => ({ ...prev, [status]: (prev[status] ?? KANBAN_STEP) + KANBAN_STEP }));
+  }
+
   const byStatus = Object.fromEntries(
     (Object.keys(LEAD_STATUS_LABELS) as LeadStatus[]).map((s) => [
       s,
@@ -502,6 +512,8 @@ function LeadsKanban({
         {ACTIVE_STATUSES.map((status) => {
           const { icon: Icon, headerCls, countCls, colCls } = STATUS_CONFIG[status];
           const cards = byStatus[status] ?? [];
+          const visible = cards.slice(0, getShown(status));
+          const remaining = cards.length - visible.length;
           return (
             <div key={status} className="flex-1 min-w-[220px] flex flex-col gap-2">
               <div className={`flex items-center justify-between rounded-lg border px-3 py-2.5 ${headerCls}`}>
@@ -517,9 +529,17 @@ function LeadsKanban({
                 {cards.length === 0 && (
                   <p className="text-xs text-muted-foreground text-center py-6 opacity-60">Sin leads</p>
                 )}
-                {cards.map((lead) => (
+                {visible.map((lead) => (
                   <LeadKanbanCard key={lead.id} lead={lead} canEdit={canEdit} visibleFields={visibleFields} />
                 ))}
+                {remaining > 0 && (
+                  <button
+                    onClick={() => showMore(status)}
+                    className="mt-1 w-full text-xs text-muted-foreground hover:text-foreground py-2 rounded-lg border border-dashed border-border hover:border-primary/30 transition-colors"
+                  >
+                    Ver {Math.min(KANBAN_STEP, remaining)} más ({remaining} restantes)
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -530,6 +550,8 @@ function LeadsKanban({
         const cards = byStatus[status] ?? [];
         if (cards.length === 0) return null;
         const { icon: Icon, countCls } = STATUS_CONFIG[status];
+        const visible = cards.slice(0, getShown(status));
+        const remaining = cards.length - visible.length;
         return (
           <div key={status} className="mt-6">
             <div className="flex items-center gap-2 mb-2">
@@ -539,10 +561,18 @@ function LeadsKanban({
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-              {cards.map((lead) => (
+              {visible.map((lead) => (
                 <LeadKanbanCard key={lead.id} lead={lead} canEdit={canEdit} visibleFields={visibleFields} />
               ))}
             </div>
+            {remaining > 0 && (
+              <button
+                onClick={() => showMore(status)}
+                className="mt-2 w-full text-xs text-muted-foreground hover:text-foreground py-2 rounded-lg border border-dashed border-border hover:border-primary/30 transition-colors"
+              >
+                Ver {Math.min(KANBAN_STEP, remaining)} más ({remaining} restantes)
+              </button>
+            )}
           </div>
         );
       })}

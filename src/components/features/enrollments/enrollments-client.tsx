@@ -302,6 +302,7 @@ export function EnrollmentsClient({
       {/* Kanban view */}
       {viewMode === "kanban" && (
         <KanbanBoard
+          key={search}
           enrollments={enrollments.filter(
             (e) =>
               !search ||
@@ -492,6 +493,8 @@ const KANBAN_COLUMNS: {
   },
 ];
 
+const KANBAN_STEP = 100;
+
 function KanbanBoard({
   enrollments,
   canEdit,
@@ -503,6 +506,13 @@ function KanbanBoard({
   onTransition: (enrollment: EnrollmentWithStudent, next: EnrollmentStatus) => void;
   onAssignTutor: (enrollment: EnrollmentWithStudent) => void;
 }) {
+  const [shown, setShown] = useState<Record<string, number>>({});
+
+  function getShown(key: string) { return shown[key] ?? KANBAN_STEP; }
+  function showMore(key: string) {
+    setShown((prev) => ({ ...prev, [key]: (prev[key] ?? KANBAN_STEP) + KANBAN_STEP }));
+  }
+
   const byStatus = Object.fromEntries(
     KANBAN_COLUMNS.map((col) => [
       col.status,
@@ -511,12 +521,16 @@ function KanbanBoard({
   ) as Record<EnrollmentStatus, EnrollmentWithStudent[]>;
 
   const canceladas = enrollments.filter((e) => e.status === "cancelada");
+  const visibleCanceladas = canceladas.slice(0, getShown("cancelada"));
+  const remainingCanceladas = canceladas.length - visibleCanceladas.length;
 
   return (
     <div className="overflow-x-auto pb-4">
       <div className="flex gap-4 min-w-[900px]">
         {KANBAN_COLUMNS.map(({ status, label, Icon, headerCls, countCls, colCls }) => {
           const cards = byStatus[status] ?? [];
+          const visible = cards.slice(0, getShown(status));
+          const remaining = cards.length - visible.length;
           return (
             <div key={status} className="flex-1 min-w-[200px] flex flex-col gap-2">
               {/* Column header */}
@@ -539,7 +553,7 @@ function KanbanBoard({
                     Sin matrículas
                   </p>
                 )}
-                {cards.map((enrollment) => (
+                {visible.map((enrollment) => (
                   <KanbanCard
                     key={enrollment.id}
                     enrollment={enrollment}
@@ -548,6 +562,14 @@ function KanbanBoard({
                     onAssignTutor={onAssignTutor}
                   />
                 ))}
+                {remaining > 0 && (
+                  <button
+                    onClick={() => showMore(status)}
+                    className="mt-1 w-full text-xs text-muted-foreground hover:text-foreground py-2 rounded-lg border border-dashed border-border hover:border-primary/30 transition-colors"
+                  >
+                    Ver {Math.min(KANBAN_STEP, remaining)} más ({remaining} restantes)
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -561,7 +583,7 @@ function KanbanBoard({
             Canceladas ({canceladas.length})
           </p>
           <div className="flex flex-col gap-2">
-            {canceladas.map((enrollment) => (
+            {visibleCanceladas.map((enrollment) => (
               <KanbanCard
                 key={enrollment.id}
                 enrollment={enrollment}
@@ -571,6 +593,14 @@ function KanbanBoard({
               />
             ))}
           </div>
+          {remainingCanceladas > 0 && (
+            <button
+              onClick={() => showMore("cancelada")}
+              className="mt-2 w-full text-xs text-muted-foreground hover:text-foreground py-2 rounded-lg border border-dashed border-border hover:border-primary/30 transition-colors"
+            >
+              Ver {Math.min(KANBAN_STEP, remainingCanceladas)} más ({remainingCanceladas} restantes)
+            </button>
+          )}
         </div>
       )}
     </div>
