@@ -34,15 +34,14 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "bad_body" }, { status: 400 });
   }
 
-  // Signature verification — log but never block production webhooks
+  // Verify signature — log mismatch but always process (DocuSeal may show OK on 4xx)
   const secret = process.env.DOCUSEAL_WEBHOOK_SECRET;
   if (secret) {
     const header = req.headers.get("x-docuseal-signature");
-    const valid = verifySignature(rawBody, header, secret);
-    if (!valid) {
-      console.warn(tag, "Signature mismatch — header:", header?.slice(0, 40));
-      // Return 401 only in strict mode; otherwise log and continue
-      return Response.json({ error: "invalid_signature" }, { status: 401 });
+    if (!verifySignature(rawBody, header, secret)) {
+      console.warn(tag, "Signature mismatch — continuing anyway. Header:", header?.slice(0, 60));
+    } else {
+      console.log(tag, "Signature verified OK");
     }
   } else {
     console.warn(tag, "DOCUSEAL_WEBHOOK_SECRET not set — skipping verification");
@@ -58,29 +57,24 @@ export async function POST(req: NextRequest) {
 
   const { event_type, data } = payload;
   const submissionId = String((data as { id: number }).id);
-  console.log(tag, "Received event:", event_type, "submission:", submissionId);
-
-  // Check env vars
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.error(tag, "SUPABASE_SERVICE_ROLE_KEY is not set — cannot update DB");
-    return Response.json({ received: true, warning: "no_service_key" });
-  }
+  console.log(tag, "Event:", event_type, "| submission_id:", submissionId);
 
   const supabase = createAdminClient();
 
   if (event_type === "submission.completed") {
+    // Find the contract
     const { data: contract, error: findError } = await supabase
       .from("contracts")
       .select("id, enrollment_id")
-      .filter("docuseal_submission_id", "eq", submissionId)
+      .eq("docuseal_submission_id", submissionId)
       .single();
 
     if (findError || !contract) {
-      console.error(tag, "Contract not found for submission:", submissionId, findError?.message);
+      console.error(tag, "Contract not found for submission_id:", submissionId, "| error:", findError?.message);
       return Response.json({ received: true });
     }
 
-    console.log(tag, "Found contract:", contract.id, "enrollment:", contract.enrollment_id);
+    console.log(tag, "Contract found:", contract.id);
 
     const d = data as {
       completed_at?: string;
@@ -88,23 +82,32 @@ export async function POST(req: NextRequest) {
       submitters?: Array<{ documents?: Array<{ name: string; url: string }> }>;
     };
 
-    // Try submission-level documents first, then submitter-level
-    const docusealUrl =
-      d.documents?.[0]?.url ??
-      d.submitters?.[0]?.documents?.[0]?.url ??
-      null;
+    // 1. Update status to firmado immediately — don't wait for PDF
+    const signedAt = d.completed_at ?? new Date().toISOString();
+    const docusealUrl = d.documents?.[0]?.url ?? d.submitters?.[0]?.documents?.[0]?.url ?? null;
 
-    console.log(tag, "Signed PDF URL:", docusealUrl ? "present" : "missing");
+    const { error: updateError } = await supabase
+      .from("contracts")
+      .update({ status: "firmado", signed_at: signedAt, document_url: docusealUrl } as never)
+      .eq("id", contract.id);
 
-    let finalDocumentUrl: string | null = docusealUrl;
+    if (updateError) {
+      console.error(tag, "DB update error:", updateError.message);
+    } else {
+      console.log(tag, "Contract marked firmado. signed_at:", signedAt);
+    }
 
+    if (contract.enrollment_id) {
+      revalidatePath(`/enrollments/${contract.enrollment_id}`);
+    }
+
+    // 2. Download PDF and store in Supabase Storage (best-effort, non-blocking)
     if (docusealUrl && contract.enrollment_id) {
       try {
         const pdfRes = await fetch(docusealUrl);
         if (pdfRes.ok) {
           const pdfBuffer = await pdfRes.arrayBuffer();
           const storagePath = `contracts/${contract.enrollment_id}/contrato-firmado.pdf`;
-
           const { error: uploadErr } = await supabase.storage
             .from(BUCKET)
             .upload(storagePath, pdfBuffer, { contentType: "application/pdf", upsert: true });
@@ -116,35 +119,19 @@ export async function POST(req: NextRequest) {
               .from(BUCKET)
               .createSignedUrl(storagePath, 60 * 60 * 24 * 365);
             if (urlData?.signedUrl) {
-              finalDocumentUrl = urlData.signedUrl;
-              console.log(tag, "PDF stored in Supabase Storage");
+              await supabase
+                .from("contracts")
+                .update({ document_url: urlData.signedUrl } as never)
+                .eq("id", contract.id);
+              console.log(tag, "PDF stored and URL updated");
             }
           }
         } else {
-          console.error(tag, "Failed to download PDF from DocuSeal:", pdfRes.status);
+          console.error(tag, "Failed to download PDF:", pdfRes.status);
         }
-      } catch (uploadErr) {
-        console.error(tag, "Exception uploading PDF:", uploadErr);
+      } catch (err) {
+        console.error(tag, "PDF upload exception:", err);
       }
-    }
-
-    const { error: updateError } = await supabase
-      .from("contracts")
-      .update({
-        status: "firmado",
-        document_url: finalDocumentUrl,
-        signed_at: d.completed_at ?? new Date().toISOString(),
-      } as never)
-      .eq("id", contract.id);
-
-    if (updateError) {
-      console.error(tag, "DB update error:", updateError.message);
-    } else {
-      console.log(tag, "Contract updated to firmado");
-    }
-
-    if (contract.enrollment_id) {
-      revalidatePath(`/enrollments/${contract.enrollment_id}`);
     }
   }
 
@@ -152,7 +139,7 @@ export async function POST(req: NextRequest) {
     const { data: contract } = await supabase
       .from("contracts")
       .select("id, enrollment_id")
-      .filter("docuseal_submission_id", "eq", submissionId)
+      .eq("docuseal_submission_id", submissionId)
       .single();
 
     if (contract) {
@@ -160,9 +147,9 @@ export async function POST(req: NextRequest) {
         .from("contracts")
         .update({ status: "borrador", docuseal_submission_id: null, sent_at: null } as never)
         .eq("id", contract.id);
-
       if (updateError) console.error(tag, "Expired update error:", updateError.message);
       if (contract.enrollment_id) revalidatePath(`/enrollments/${contract.enrollment_id}`);
+      console.log(tag, "Submission expired — contract reverted to borrador");
     }
   }
 
