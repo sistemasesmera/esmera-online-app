@@ -5,7 +5,6 @@ import {
   ClipboardList,
   GraduationCap,
   LayoutDashboard,
-  PenLine,
   Target,
   UserCog,
   Users,
@@ -64,12 +63,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: BookOpen,
         roles: ["tech", "administracion"],
       },
-      {
-        label: "Firmas",
-        href: "/signatures",
-        icon: PenLine,
-        roles: ["tech", "administracion", "jefe_comercial"],
-      },
+
     ],
   },
   {
