@@ -3,6 +3,10 @@ import { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+export async function GET() {
+  return Response.json({ ok: true, route: "/api/webhooks/docuseal", status: "reachable" });
+}
+
 const BUCKET = "adjuntos";
 
 function verifySignature(rawBody: string, header: string | null, secret: string): boolean {
