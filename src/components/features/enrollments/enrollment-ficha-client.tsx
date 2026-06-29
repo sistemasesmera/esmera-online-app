@@ -591,8 +591,37 @@ export function EnrollmentFichaClient({
                       )}
                     </div>
                   )}
+                  {/* Contrato firmado manualmente (subido) */}
+                  {contract.status === "firmado" && !contract.docuseal_submission_id && (
+                    <div className="rounded-lg border bg-muted/30 px-3 py-2.5 flex flex-col gap-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Contrato firmado
+                      </p>
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-medium leading-5">Subido manualmente</p>
+                          {contract.signed_at && (
+                            <p className="text-[10px] text-muted-foreground leading-4">
+                              {new Date(contract.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+                              {" · "}
+                              {new Date(contract.signed_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+                            </p>
+                          )}
+                          {contract.document_url && (
+                            <a href={contract.document_url} target="_blank" rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 hover:underline leading-4">
+                              <ExternalLink className="h-3 w-3" />
+                              Ver documento
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Firma electrónica: tracker de estado */}
-                  {(contract.sent_at || contract.status === "enviado" || contract.status === "firmado") && (
+                  {contract.docuseal_submission_id && (
                     <div className="rounded-lg border bg-muted/30 px-3 py-2.5 flex flex-col gap-0">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
                         Firma electrónica
@@ -633,7 +662,7 @@ export function EnrollmentFichaClient({
                           : <Circle className="h-4 w-4 text-muted-foreground/30 mt-0.5 shrink-0" />}
                         <div>
                           <p className={`text-xs font-medium leading-5 ${contract.status === "enviado" ? "text-blue-700" : contract.status !== "firmado" ? "text-muted-foreground" : ""}`}>
-                            {contract.status === "enviado" ? "Pendiente de firma" : "Firmado"}
+                            {contract.status === "enviado" ? "Pendiente de firma" : "Firmado digitalmente"}
                           </p>
                           {contract.signed_at && (
                             <p className="text-[10px] text-muted-foreground leading-4">
@@ -643,12 +672,8 @@ export function EnrollmentFichaClient({
                             </p>
                           )}
                           {contract.document_url && contract.status === "firmado" && (
-                            <a
-                              href={contract.document_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 hover:underline leading-4"
-                            >
+                            <a href={contract.document_url} target="_blank" rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 hover:underline leading-4">
                               <ExternalLink className="h-3 w-3" />
                               Ver PDF firmado
                             </a>
