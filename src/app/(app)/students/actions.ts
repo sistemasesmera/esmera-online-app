@@ -43,7 +43,10 @@ export async function createStudent(input: CreateStudentInput): Promise<ActionRe
   });
 
   if (error) {
-    if (error.code === "23505") return { error: "Ya existe un alumno con ese DNI/NIE", success: false };
+    if (error.code === "23505") {
+      if (error.message.includes("dni")) return { error: "Ya existe un alumno con ese DNI/NIE", success: false };
+      return { error: "Error de duplicado en la base de datos: " + error.message, success: false };
+    }
     return { error: error.message, success: false };
   }
 
