@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useRef, useState, useTransition, useEffect } from "react";
 import { toast } from "sonner";
 
 import {
@@ -274,20 +274,12 @@ export function EnrollmentFichaClient({
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
 
-  // Auto-refresh when contract status changes (e.g. signed via DocuSeal webhook)
+  // Poll for contract updates while awaiting signature
   useEffect(() => {
-    const supabase = createClient();
-    const channel = supabase
-      .channel(`contract-${enrollment.id}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "contracts", filter: `enrollment_id=eq.${enrollment.id}` },
-        () => { router.refresh(); }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [enrollment.id, router]);
+    if (contract?.status !== "enviado") return;
+    const interval = setInterval(() => router.refresh(), 10_000);
+    return () => clearInterval(interval);
+  }, [contract?.status, router]);
 
   const student = enrollment.students;
   const contract = enrollment.contracts?.[0];
