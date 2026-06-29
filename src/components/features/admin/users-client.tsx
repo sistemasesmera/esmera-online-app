@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
@@ -24,6 +24,28 @@ export function UsersClient({ users }: { users: UserRow[] }) {
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:users");
+  const [isDownloadingContract, setIsDownloadingContract] = useState(false);
+
+  async function handleDownloadBlankContract() {
+    setIsDownloadingContract(true);
+    try {
+      const res = await fetch("/api/contracts/blank");
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "contrato-en-blanco.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      // silencioso — el usuario verá que no descargó nada
+    } finally {
+      setIsDownloadingContract(false);
+    }
+  }
 
   useEffect(() => { setPageIndex(0); }, [search, pageSize]);
 
@@ -45,10 +67,21 @@ export function UsersClient({ users }: { users: UserRow[] }) {
         onSearchChange={setSearch}
         searchPlaceholder="Buscar por nombre o email…"
         actions={
-          <Button size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-1 h-4 w-4" />
-            Nuevo usuario
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={isDownloadingContract}
+              onClick={handleDownloadBlankContract}
+            >
+              <Download className="mr-1 h-4 w-4" />
+              {isDownloadingContract ? "Generando…" : "Contrato en blanco"}
+            </Button>
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-1 h-4 w-4" />
+              Nuevo usuario
+            </Button>
+          </div>
         }
       />
       <DataTable

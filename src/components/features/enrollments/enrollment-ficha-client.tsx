@@ -5,6 +5,7 @@ import {
   Award,
   Banknote,
   CreditCard,
+  Download,
   ExternalLink,
   FileCheck2,
   FileText,
@@ -13,6 +14,7 @@ import {
   Lock,
   Paperclip,
   Plus,
+  Send,
   Trash2,
   Upload,
   User,
@@ -264,6 +266,8 @@ export function EnrollmentFichaClient({
   const [followupOpen, setFollowupOpen] = useState(false);
   const [certDocOpen, setCertDocOpen] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isSendingForSignature, setIsSendingForSignature] = useState(false);
   const [certPendingFile, setCertPendingFile] = useState<File | null>(null);
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
@@ -317,6 +321,42 @@ export function EnrollmentFichaClient({
     if (file) setPendingFile(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
+
+  async function handleSendForSignature() {
+    setIsSendingForSignature(true);
+    try {
+      const res = await fetch(`/api/enrollments/${enrollment.id}/send-for-signature`, { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) toast.error(json.error ?? "Error al enviar para firma");
+      else toast.success("Contrato enviado al alumno para firma");
+    } catch {
+      toast.error("Error al enviar para firma");
+    } finally {
+      setIsSendingForSignature(false);
+    }
+  }
+
+  async function handleDownloadPdf() {
+    setIsGeneratingPdf(true);
+    try {
+      const res = await fetch(`/api/enrollments/${enrollment.id}/contract`);
+      if (!res.ok) throw new Error("Error del servidor");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `matricula-${enrollment.enrollment_number}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error("No se pudo generar el contrato PDF");
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  }
+
 
   function handleSign() {
     if (!pendingFile) return;
@@ -537,6 +577,11 @@ export function EnrollmentFichaClient({
                       )}
                     </div>
                   )}
+                  {contract.sent_at && contract.status === "enviado" && (
+                    <p className="text-xs text-muted-foreground">
+                      Enviado para firma el {new Date(contract.sent_at).toLocaleDateString("es-ES")}
+                    </p>
+                  )}
                   {contract.signed_at && (
                     <p className="text-xs text-muted-foreground">
                       Firmado el {new Date(contract.signed_at).toLocaleDateString("es-ES")}
@@ -553,6 +598,34 @@ export function EnrollmentFichaClient({
                       <ExternalLink className="h-3 w-3" />
                       Ver documento
                     </a>
+                  )}
+
+                  {canSign && (contract.status === "borrador" || contract.status === "enviado") && (
+                    <Button
+                      size="sm"
+                      variant={contract.status === "borrador" ? "default" : "outline"}
+                      disabled={isSendingForSignature}
+                      onClick={handleSendForSignature}
+                      className={contract.status === "borrador" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                      {isSendingForSignature
+                        ? "Enviando…"
+                        : contract.status === "enviado"
+                        ? "Reenviar para firma"
+                        : "Enviar para firma"}
+                    </Button>
+                  )}
+                  {(canEdit || canSign) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={isGeneratingPdf}
+                      onClick={handleDownloadPdf}
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      {isGeneratingPdf ? "Generando…" : "Generar contrato PDF"}
+                    </Button>
                   )}
 
                   {canSign && contract.status === "firmado" && (
