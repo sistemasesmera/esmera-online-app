@@ -1,22 +1,19 @@
 import { Code2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CopyButton } from "./copy-button";
 
 const BASE_URL = "https://app.esmeraonline.com";
 const ENDPOINT = "/api/public/leads";
 
-const REQUEST_EXAMPLE = JSON.stringify(
-  {
-    full_name: "María García López",
-    email: "maria@ejemplo.com",
-    phone: "600123456",
-    source: "web",
-    interested_course: "Desarrollo Web",
-    notes: "Interesada en el turno de tarde",
-  },
-  null,
-  2
-);
+const fields = [
+  { name: "full_name",         type: "string", required: true,  desc: "Nombre completo del lead" },
+  { name: "email",             type: "string", required: false, desc: "Correo electrónico" },
+  { name: "phone",             type: "string", required: false, desc: "Teléfono de contacto" },
+  { name: "source",            type: "enum",   required: false, desc: "Origen: web · meta_ads · organico  (por defecto: web)" },
+  { name: "interested_course", type: "string", required: false, desc: "Nombre del curso de interés" },
+  { name: "notes",             type: "string", required: false, desc: "Notas adicionales" },
+];
 
 const RESPONSE_EXAMPLE = JSON.stringify(
   {
@@ -36,16 +33,27 @@ const RESPONSE_EXAMPLE = JSON.stringify(
   2
 );
 
-const fields = [
-  { name: "full_name",          type: "string",  required: true,  desc: "Nombre completo del lead" },
-  { name: "email",              type: "string",  required: false, desc: "Correo electrónico" },
-  { name: "phone",              type: "string",  required: false, desc: "Teléfono de contacto" },
-  { name: "source",             type: "enum",    required: false, desc: "Origen: web · meta_ads · organico (por defecto: web)" },
-  { name: "interested_course",  type: "string",  required: false, desc: "Nombre del curso de interés" },
-  { name: "notes",              type: "string",  required: false, desc: "Notas adicionales" },
-];
-
 export default function ApiPage() {
+  const apiKey = process.env.PUBLIC_API_KEY ?? "(no configurada)";
+
+  const requestExample = JSON.stringify(
+    {
+      full_name: "María García López",
+      email: "maria@ejemplo.com",
+      phone: "600123456",
+      source: "web",
+      interested_course: "Desarrollo Web",
+      notes: "Interesada en el turno de tarde",
+    },
+    null,
+    2
+  );
+
+  const curlExample = `curl -X POST ${BASE_URL}${ENDPOINT} \\
+  -H "Content-Type: application/json" \\
+  -H "X-Api-Key: ${apiKey}" \\
+  -d '${requestExample}'`;
+
   return (
     <div className="p-6 max-w-3xl mx-auto flex flex-col gap-6">
       <div className="flex items-center gap-3">
@@ -56,6 +64,21 @@ export default function ApiPage() {
         </div>
       </div>
 
+      {/* API Key */}
+      <Card className="border card-shadow">
+        <CardHeader className="pb-3 border-b">
+          <CardTitle className="text-sm font-semibold">Tu API Key</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4 flex flex-col gap-2">
+          <p className="text-sm text-muted-foreground">Incluye esta key en cada petición como header <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">X-Api-Key</code>.</p>
+          <div className="flex items-center gap-2 rounded-lg border bg-muted/40 px-3 py-2">
+            <code className="flex-1 text-xs font-mono break-all text-indigo-700">{apiKey}</code>
+            <CopyButton text={apiKey} />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Endpoint */}
       <Card className="border card-shadow">
         <CardHeader className="border-b pb-3">
           <div className="flex items-center gap-3">
@@ -65,14 +88,6 @@ export default function ApiPage() {
           <CardTitle className="text-sm font-medium text-muted-foreground mt-1">Crear un lead</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-6 pt-4">
-
-          {/* Auth */}
-          <section className="flex flex-col gap-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Autenticación</h2>
-            <p className="text-sm">Incluye tu API key en el header de la petición:</p>
-            <pre className="rounded-lg bg-muted px-4 py-3 text-xs font-mono overflow-x-auto">{`X-Api-Key: tu_api_key`}</pre>
-            <p className="text-xs text-muted-foreground">También se acepta <code className="font-mono">Authorization: Bearer tu_api_key</code></p>
-          </section>
 
           {/* Fields */}
           <section className="flex flex-col gap-2">
@@ -105,18 +120,20 @@ export default function ApiPage() {
             </div>
           </section>
 
-          {/* Request example */}
+          {/* Curl example */}
           <section className="flex flex-col gap-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ejemplo de petición</h2>
-            <pre className="rounded-lg bg-muted px-4 py-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{`curl -X POST ${BASE_URL}${ENDPOINT} \\
-  -H "Content-Type: application/json" \\
-  -H "X-Api-Key: tu_api_key" \\
-  -d '${REQUEST_EXAMPLE}'`}</pre>
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ejemplo de petición (curl)</h2>
+              <CopyButton text={curlExample} />
+            </div>
+            <pre className="rounded-lg bg-muted px-4 py-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{curlExample}</pre>
           </section>
 
           {/* Response */}
           <section className="flex flex-col gap-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Respuesta exitosa <span className="text-emerald-600 font-mono">201</span></h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Respuesta exitosa <span className="text-emerald-600 font-mono">201</span>
+            </h2>
             <pre className="rounded-lg bg-muted px-4 py-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap">{RESPONSE_EXAMPLE}</pre>
           </section>
 
