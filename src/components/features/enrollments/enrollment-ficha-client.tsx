@@ -391,7 +391,17 @@ export function EnrollmentFichaClient({
   function handleSign() {
     if (!pendingFile) return;
     const file = pendingFile;
+    const hasPendingDigital = contract?.status === "enviado" && !!contract?.docuseal_submission_id;
     startUpload(async () => {
+      // If there's a pending digital signature, cancel it first
+      if (hasPendingDigital) {
+        const cancelRes = await fetch(`/api/enrollments/${enrollment.id}/cancel-signature`, { method: "POST" });
+        if (!cancelRes.ok) {
+          toast.error("No se pudo cancelar la firma digital pendiente");
+          return;
+        }
+      }
+
       const supabase = createClient();
       const ext = file.name.split(".").pop() ?? "pdf";
       const path = `contracts/${enrollment.id}/${crypto.randomUUID()}.${ext}`;
@@ -414,6 +424,7 @@ export function EnrollmentFichaClient({
         toast.success("Contrato firmado y adjuntado");
         setSignOpen(false);
         setPendingFile(null);
+        router.refresh();
       }
     });
   }
@@ -1152,6 +1163,12 @@ export function EnrollmentFichaClient({
               Adjunta el PDF o documento con la firma del cliente para registrar el contrato como firmado.
             </p>
           </DialogHeader>
+          {contract?.status === "enviado" && contract?.docuseal_submission_id && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
+              <span className="mt-0.5 shrink-0">⚠️</span>
+              <span>Hay una firma digital pendiente. Al subir este archivo, el enlace enviado al alumno quedará cancelado.</span>
+            </div>
+          )}
           <div className="flex flex-col gap-3 py-2">
             <input
               ref={fileInputRef}
