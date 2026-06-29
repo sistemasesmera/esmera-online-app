@@ -313,5 +313,6 @@ export async function signContractForEnrollment(
 
   if (enrollment) revalidatePath(`/students/${enrollment.student_id}`);
   revalidatePath("/enrollments");
+  revalidatePath(`/enrollments/${enrollmentId}`);
   return { error: null, success: true };
 }

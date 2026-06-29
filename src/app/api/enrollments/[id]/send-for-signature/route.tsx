@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { Font, renderToBuffer } from "@react-pdf/renderer";
 import { NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { EnrollmentContractPDF, type EnrollmentContractData } from "@/lib/pdf/enrollment-contract";
@@ -179,6 +180,9 @@ export async function POST(
         sent_at: new Date().toISOString(),
       } as never)
       .eq("id", contract.id);
+
+    revalidatePath(`/enrollments/${id}`);
+    revalidatePath("/enrollments");
 
     return Response.json({ success: true });
   } catch (err) {
