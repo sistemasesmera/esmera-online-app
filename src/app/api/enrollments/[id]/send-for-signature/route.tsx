@@ -130,7 +130,7 @@ export async function POST(
             required: true,
             areas: [{
               x: 0.087,
-              y: 0.59,
+              y: 0.49,
               w: 0.41,
               h: 0.06,
               page: 3,
