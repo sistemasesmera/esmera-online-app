@@ -63,8 +63,8 @@ export function DatePickerField<TFieldValues extends FieldValues>({
                   selected={selectedDate}
                   onSelect={(date) => field.onChange(date ? formatLocalDate(date) : null)}
                   captionLayout="dropdown"
-                  fromYear={fromYear}
-                  toYear={toYear}
+                  startMonth={new Date(fromYear, 0)}
+                  endMonth={new Date(toYear, 11)}
                   defaultMonth={selectedDate ?? new Date(toYear - 25, 0)}
                 />
               </PopoverContent>
