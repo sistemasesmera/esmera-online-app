@@ -31,7 +31,7 @@ function tryRegisterMontserrat(): string {
 }
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -40,6 +40,13 @@ export async function POST(
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
+
+    // Optional override email from request body
+    let overrideEmail: string | null = null;
+    try {
+      const body = await req.json();
+      if (body?.email && typeof body.email === "string") overrideEmail = body.email.trim();
+    } catch { /* no body is fine */ }
 
     const { data: enrollment, error } = await supabase
       .from("enrollments")
@@ -76,7 +83,8 @@ export async function POST(
     if (contract.status === "firmado") return Response.json({ error: "El contrato ya está firmado" }, { status: 400 });
 
     const student = raw.students;
-    if (!student?.email) return Response.json({ error: "El alumno no tiene email registrado" }, { status: 400 });
+    if (!student?.email && !overrideEmail) return Response.json({ error: "El alumno no tiene email registrado" }, { status: 400 });
+    const recipientEmail = overrideEmail ?? student!.email;
 
     const fontFamily = tryRegisterMontserrat();
     let logoBase64: string | null = null;
@@ -139,7 +147,7 @@ export async function POST(
         }],
         submitters: [{
           name: student.full_name,
-          email: student.email,
+          email: recipientEmail,
           role: "Alumno",
           external_id: id,
         }],

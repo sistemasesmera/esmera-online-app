@@ -273,6 +273,8 @@ export function EnrollmentFichaClient({
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSendingForSignature, setIsSendingForSignature] = useState(false);
+  const [sendSignatureOpen, setSendSignatureOpen] = useState(false);
+  const [signatureEmail, setSignatureEmail] = useState("");
   const [certPendingFile, setCertPendingFile] = useState<File | null>(null);
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
@@ -336,13 +338,23 @@ export function EnrollmentFichaClient({
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  function openSendSignatureDialog() {
+    setSignatureEmail(student?.email ?? "");
+    setSendSignatureOpen(true);
+  }
+
   async function handleSendForSignature() {
+    setSendSignatureOpen(false);
     setIsSendingForSignature(true);
     try {
-      const res = await fetch(`/api/enrollments/${enrollment.id}/send-for-signature`, { method: "POST" });
+      const res = await fetch(`/api/enrollments/${enrollment.id}/send-for-signature`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: signatureEmail.trim() }),
+      });
       const json = await res.json();
       if (!res.ok) toast.error(json.error ?? "Error al enviar para firma");
-      else toast.success("Contrato enviado al alumno para firma");
+      else toast.success(`Contrato enviado a ${signatureEmail.trim()} para firma`);
     } catch {
       toast.error("Error al enviar para firma");
     } finally {
@@ -690,7 +702,7 @@ export function EnrollmentFichaClient({
                       size="sm"
                       variant={contract.status === "borrador" ? "default" : "outline"}
                       disabled={isSendingForSignature}
-                      onClick={handleSendForSignature}
+                      onClick={openSendSignatureDialog}
                       className={contract.status === "borrador" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}
                     >
                       <Send className="h-3.5 w-3.5" />
@@ -1059,6 +1071,41 @@ export function EnrollmentFichaClient({
             <Button variant="outline" onClick={() => setActivateOpen(false)} disabled={isPending}>Cancelar</Button>
             <Button onClick={handleActivate} disabled={isPending}>
               {isPending ? "Activando…" : "Confirmar y activar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send for signature — email confirmation */}
+      <Dialog open={sendSignatureOpen} onOpenChange={(v) => !v && setSendSignatureOpen(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Enviar contrato para firma</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-2">
+            <p className="text-sm text-muted-foreground">
+              El contrato se enviará al siguiente correo electrónico. Puedes cambiarlo si necesitas que lo firme otra persona.
+            </p>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="sig-email">Email del firmante</Label>
+              <Input
+                id="sig-email"
+                type="email"
+                value={signatureEmail}
+                onChange={(e) => setSignatureEmail(e.target.value)}
+                placeholder="correo@ejemplo.com"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSendSignatureOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!signatureEmail.trim() || isSendingForSignature}
+              onClick={handleSendForSignature}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              <Send className="h-3.5 w-3.5" />
+              Enviar para firma
             </Button>
           </DialogFooter>
         </DialogContent>
