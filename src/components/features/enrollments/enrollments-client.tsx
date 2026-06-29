@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
+
+import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
 import { toast } from "sonner";
 
 import { activateEnrollment, assignTutor, updateEnrollmentStatus } from "@/app/(app)/enrollments/actions";
@@ -124,7 +126,7 @@ export function EnrollmentsClient({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<EnrollmentStatus | "">("");
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:enrollments");
   const [activating, setActivating] = useState<EnrollmentWithStudent | null>(null);
   const [assigning, setAssigning] = useState<EnrollmentWithStudent | null>(null);
   const [platformId, setPlatformId] = useState("");

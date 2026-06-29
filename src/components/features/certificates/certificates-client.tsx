@@ -3,6 +3,8 @@
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
+
 import { getCertificateColumns } from "@/components/features/certificates/certificate-columns";
 import { CertificateForm } from "@/components/features/certificates/certificate-form";
 import { DataTable } from "@/components/shared/data-table/data-table";
@@ -28,7 +30,7 @@ export function CertificatesClient({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<CertificateStatus | "">("");
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:certificates");
 
   useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
 

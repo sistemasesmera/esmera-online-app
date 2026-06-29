@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
 import { getStudentColumns } from "@/components/features/students/student-columns";
 import { DataTable } from "@/components/shared/data-table/data-table";
 import { DataTableToolbar } from "@/components/shared/data-table/data-table-toolbar";
@@ -10,7 +11,7 @@ import type { StudentWithComercial } from "@/lib/data/students.repository";
 export function StudentsClient({ students, canEdit = false }: { students: StudentWithComercial[]; canEdit?: boolean }) {
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:students");
 
   useEffect(() => { setPageIndex(0); }, [search, pageSize]);
 

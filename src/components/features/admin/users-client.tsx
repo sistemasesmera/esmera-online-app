@@ -3,6 +3,8 @@
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
+
 import { UserForm } from "@/components/features/admin/user-form";
 import { getUserColumns } from "@/components/features/admin/user-columns";
 import { DataTable } from "@/components/shared/data-table/data-table";
@@ -21,7 +23,7 @@ export function UsersClient({ users }: { users: UserRow[] }) {
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:users");
 
   useEffect(() => { setPageIndex(0); }, [search, pageSize]);
 

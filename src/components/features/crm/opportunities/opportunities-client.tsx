@@ -3,6 +3,8 @@
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
+
 import { getOpportunityColumns } from "@/components/features/crm/opportunities/opportunity-columns";
 import { OpportunityForm } from "@/components/features/crm/opportunities/opportunity-form";
 import { DataTable } from "@/components/shared/data-table/data-table";
@@ -36,7 +38,7 @@ export function OpportunitiesClient({
   const [editingOpp, setEditingOpp] = useState<OpportunityWithJoins | null>(null);
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:opportunities");
 
   useEffect(() => { setPageIndex(0); }, [search, pageSize]);
 

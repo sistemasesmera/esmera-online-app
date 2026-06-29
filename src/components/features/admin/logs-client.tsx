@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 
+import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
+
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,7 +48,7 @@ export function LogsClient({ logs }: { logs: ActivityLogRow[] }) {
   const [actionGroup, setActionGroup] = useState("");
   const [userFilter, setUserFilter]   = useState("");
   const [pageIndex, setPageIndex]     = useState(0);
-  const [pageSize, setPageSize]       = useState(50);
+  const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:logs", 50);
 
   useEffect(() => { setPageIndex(0); }, [search, moduleFilter, actionGroup, userFilter, pageSize]);
 

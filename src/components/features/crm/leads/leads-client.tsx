@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
+
+import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
 import type { RowSelectionState } from "@tanstack/react-table";
 import { toast } from "sonner";
 
@@ -186,7 +188,7 @@ export function LeadsClient({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isPendingAssign, startAssignTransition] = useTransition();
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:leads");
 
   useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
 

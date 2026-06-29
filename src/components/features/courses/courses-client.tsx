@@ -3,6 +3,8 @@
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
+
 import { getCourseColumns } from "@/components/features/courses/course-columns";
 import { CourseForm } from "@/components/features/courses/course-form";
 import { DataTable } from "@/components/shared/data-table/data-table";
@@ -22,7 +24,7 @@ export function CoursesClient({
   const [editingCourse, setEditingCourse] = useState<CourseRow | null>(null);
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:courses");
 
   useEffect(() => { setPageIndex(0); }, [search, pageSize]);
 
