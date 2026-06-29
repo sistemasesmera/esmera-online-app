@@ -154,8 +154,8 @@ export async function POST(
           external_id: id,
         }],
         message: {
-          subject: `Firma tu contrato de matrícula — ${raw.courses?.name ?? "Esmera Formación"}`,
-          body: `Hola ${student.full_name},\n\nTe enviamos el contrato de tu matrícula en Esmera Formación para que lo revises y firmes digitalmente.\n\nPulsa el siguiente enlace para acceder al documento:\n\n{{submitter.link}}\n\nSi tienes cualquier duda, contáctanos en info@esmeraonline.com.\n\nEsmera Formación`,
+          subject: `Firma tu contrato de matrícula — ${raw.courses?.name ?? "Esmera Online"}`,
+          body: `Hola ${student.full_name},\n\nTe enviamos el contrato de tu matrícula en Esmera Online para que lo revises y firmes digitalmente.\n\nPulsa el siguiente enlace para acceder al documento:\n\n{{submitter.link}}\n\nSi tienes cualquier duda, contáctanos en info@esmeraonline.com.\n\nEsmera Online`,
         },
       }),
     });
