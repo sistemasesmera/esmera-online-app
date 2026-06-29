@@ -146,6 +146,7 @@ export async function POST(
             }],
           }],
         }],
+        expire_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
         submitters: [{
           name: student.full_name,
           email: recipientEmail,
