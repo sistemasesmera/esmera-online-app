@@ -697,21 +697,27 @@ export function EnrollmentFichaClient({
                     </div>
                   )}
 
-                  {canSign && (contract.status === "borrador" || contract.status === "enviado") && (
+                  {canSign && contract.status === "borrador" && (
                     <Button
                       size="sm"
-                      variant={contract.status === "borrador" ? "default" : "outline"}
                       disabled={isSendingForSignature}
                       onClick={openSendSignatureDialog}
-                      className={contract.status === "borrador" ? "bg-indigo-600 hover:bg-indigo-700 text-white" : ""}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white"
                     >
                       <Send className="h-3.5 w-3.5" />
-                      {isSendingForSignature
-                        ? "Enviando…"
-                        : contract.status === "enviado"
-                        ? "Reenviar para firma"
-                        : "Enviar para firma"}
+                      {isSendingForSignature ? "Enviando…" : "Enviar para firma"}
                     </Button>
+                  )}
+                  {canSign && contract.status === "enviado" && contract.docuseal_submission_id && (
+                    <a
+                      href={`https://console.docuseal.com/submissions/${contract.docuseal_submission_id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold border border-input bg-background hover:bg-accent transition-colors"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                      Ver en DocuSeal
+                    </a>
                   )}
                   {(canEdit || canSign) && (
                     <Button
