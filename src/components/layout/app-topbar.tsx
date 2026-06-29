@@ -23,7 +23,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { signOut } from "@/lib/auth/sign-out";
 import { ROLE_LABELS } from "@/lib/domain/shared/permissions";
 import type { CurrentUser } from "@/lib/auth/get-current-user";
@@ -55,7 +54,6 @@ export function AppTopbar({ user }: { user: CurrentUser }) {
 
         <div className="flex items-center gap-1">
           <NotificationBell userId={user.id} />
-          <ThemeToggle />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
