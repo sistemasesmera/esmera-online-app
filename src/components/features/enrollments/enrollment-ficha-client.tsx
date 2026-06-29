@@ -274,12 +274,14 @@ export function EnrollmentFichaClient({
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
 
+  const contractStatus = enrollment.contracts?.[0]?.status;
+
   // Poll for contract updates while awaiting signature
   useEffect(() => {
-    if (contract?.status !== "enviado") return;
+    if (contractStatus !== "enviado") return;
     const interval = setInterval(() => router.refresh(), 10_000);
     return () => clearInterval(interval);
-  }, [contract?.status, router]);
+  }, [contractStatus, router]);
 
   const student = enrollment.students;
   const contract = enrollment.contracts?.[0];
