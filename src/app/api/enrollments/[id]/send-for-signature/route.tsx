@@ -167,12 +167,14 @@ export async function POST(
 
     const docusealData = await docusealRes.json();
     const submissionId = String(docusealData.id);
+    const signingUrl: string | null = docusealData.submitters?.[0]?.embed_src ?? null;
 
     await supabase
       .from("contracts")
       .update({
         status: "enviado",
         docuseal_submission_id: submissionId,
+        docuseal_signing_url: signingUrl,
         sent_at: new Date().toISOString(),
       } as never)
       .eq("id", contract.id);

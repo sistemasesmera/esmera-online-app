@@ -16,6 +16,7 @@ export type ContractBasic = {
   signed_at: string | null;
   sent_at: string | null;
   docuseal_submission_id: string | null;
+  docuseal_signing_url: string | null;
 };
 
 export type EnrollmentWithCourse = {
@@ -48,7 +49,7 @@ const ENROLLMENT_SELECT = `
   courses!course_id(name, code),
   platforms!platform_id(name),
   tutors!tutor_id(users!user_id(full_name)),
-  contracts!enrollment_id(id, status, amount, payment_type, cash_method, cash_amount, financer, financed_amount, document_url, signed_at, sent_at, docuseal_submission_id)
+  contracts!enrollment_id(id, status, amount, payment_type, cash_method, cash_amount, financer, financed_amount, document_url, signed_at, sent_at, docuseal_submission_id, docuseal_signing_url)
 ` as const;
 
 export async function getEnrollmentsByStudent(studentId: string): Promise<EnrollmentWithCourse[]> {

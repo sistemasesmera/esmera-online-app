@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Circle,
   Clock,
+  Copy,
   CreditCard,
   Download,
   ExternalLink,
@@ -709,15 +710,30 @@ export function EnrollmentFichaClient({
                     </Button>
                   )}
                   {canSign && contract.status === "enviado" && contract.docuseal_submission_id && (
-                    <a
-                      href={`https://console.docuseal.com/submissions/${contract.docuseal_submission_id}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold border border-input bg-background hover:bg-accent transition-colors"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                      Ver en DocuSeal
-                    </a>
+                    <div className="flex items-center gap-2">
+                      {contract.docuseal_signing_url && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            navigator.clipboard.writeText(contract.docuseal_signing_url!);
+                            toast.success("Enlace copiado");
+                          }}
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          Copiar enlace de firma
+                        </Button>
+                      )}
+                      <a
+                        href={`https://console.docuseal.com/submissions/${contract.docuseal_submission_id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold border border-input bg-background hover:bg-accent transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Ver en DocuSeal
+                      </a>
+                    </div>
                   )}
                   {(canEdit || canSign) && (
                     <Button
