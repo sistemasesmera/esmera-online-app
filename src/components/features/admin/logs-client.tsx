@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ActivityLogRow } from "@/lib/data/activity-logs.repository";
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const MODULE_OPTIONS = [
   { value: "",           label: "Todos los módulos" },
@@ -46,8 +46,9 @@ export function LogsClient({ logs }: { logs: ActivityLogRow[] }) {
   const [actionGroup, setActionGroup] = useState("");
   const [userFilter, setUserFilter]   = useState("");
   const [pageIndex, setPageIndex]     = useState(0);
+  const [pageSize, setPageSize]       = useState(50);
 
-  useEffect(() => { setPageIndex(0); }, [search, moduleFilter, actionGroup, userFilter]);
+  useEffect(() => { setPageIndex(0); }, [search, moduleFilter, actionGroup, userFilter, pageSize]);
 
   const uniqueUsers = useMemo(() => {
     const names = Array.from(new Set(logs.map((l) => l.user_name).filter(Boolean)));
@@ -71,8 +72,8 @@ export function LogsClient({ logs }: { logs: ActivityLogRow[] }) {
     });
   }, [logs, search, moduleFilter, actionGroup, userFilter]);
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData  = filtered.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageData  = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const hasFilters = search || moduleFilter || actionGroup || userFilter;
 
@@ -147,12 +148,25 @@ export function LogsClient({ logs }: { logs: ActivityLogRow[] }) {
       <ActivityFeed logs={pageData} emptyText="No hay actividad que coincida con los filtros." />
 
       {/* Pagination */}
-      {pageCount > 1 && (
-        <div className="flex items-center justify-between gap-2 px-1 pt-2 border-t">
-          <span className="text-sm text-muted-foreground">
-            Página <span className="font-medium text-foreground">{pageIndex + 1}</span> de{" "}
-            <span className="font-medium text-foreground">{pageCount}</span>
-          </span>
+      <div className="flex items-center justify-between gap-2 px-1 pt-2 border-t">
+        <div className="flex items-center gap-3">
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(Number(e.target.value))}
+            className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+          >
+            {PAGE_SIZE_OPTIONS.map((n) => (
+              <option key={n} value={n}>{n} por página</option>
+            ))}
+          </select>
+          {pageCount > 1 && (
+            <span className="text-sm text-muted-foreground">
+              Página <span className="font-medium text-foreground">{pageIndex + 1}</span> de{" "}
+              <span className="font-medium text-foreground">{pageCount}</span>
+            </span>
+          )}
+        </div>
+        {pageCount > 1 && (
           <div className="flex items-center gap-1">
             <Button
               variant="outline"
@@ -173,8 +187,8 @@ export function LogsClient({ logs }: { logs: ActivityLogRow[] }) {
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

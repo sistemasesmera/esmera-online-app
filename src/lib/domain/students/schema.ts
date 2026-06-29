@@ -23,10 +23,7 @@ export const createStudentSchema = z.object({
 
 export const updateStudentSchema = createStudentSchema.extend({
   status: z.enum(STUDENT_STATUSES as [StudentStatus, ...StudentStatus[]]),
-  assigned_to: z.preprocess(
-    (v) => (v === "" ? null : v),
-    z.string().uuid().nullable().optional()
-  ),
+  assigned_to: z.string().nullable().optional(),
 });
 
 export const convertLeadSchema = z.object({

@@ -92,7 +92,7 @@ export async function updateStudent(id: string, input: UpdateStudentInput): Prom
       province: province || null,
       postal_code: postal_code || null,
       birth_date: birth_date || null,
-      ...(canAssignStudent ? { assigned_to: assigned_to ?? null } : {}),
+      ...(canAssignStudent ? { assigned_to: (assigned_to === "" ? null : assigned_to) ?? null } : {}),
     })
     .eq("id", id);
 

@@ -16,15 +16,14 @@ import {
 } from "@/components/ui/dialog";
 import type { UserRow } from "@/lib/data/users.repository";
 
-const PAGE_SIZE = 20;
-
 export function UsersClient({ users }: { users: UserRow[] }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserRow | null>(null);
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
-  useEffect(() => { setPageIndex(0); }, [search]);
+  useEffect(() => { setPageIndex(0); }, [search, pageSize]);
 
   const filtered = users.filter(
     (u) =>
@@ -32,8 +31,8 @@ export function UsersClient({ users }: { users: UserRow[] }) {
       u.email.toLowerCase().includes(search.toLowerCase())
   );
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData = filtered.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageData = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const columns = getUserColumns(setEditingUser);
 
@@ -53,7 +52,7 @@ export function UsersClient({ users }: { users: UserRow[] }) {
       <DataTable
         columns={columns}
         data={pageData}
-        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex }}
+        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex, pageSize, onPageSizeChange: setPageSize }}
       />
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>

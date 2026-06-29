@@ -15,8 +15,6 @@ import type { CertificateStatus } from "@/types/database.types";
 
 const ALL_STATUSES = Object.entries(CERT_STATUS_LABELS) as [CertificateStatus, string][];
 
-const PAGE_SIZE = 20;
-
 export function CertificatesClient({
   certificates,
   enrollments,
@@ -30,8 +28,9 @@ export function CertificatesClient({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<CertificateStatus | "">("");
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
-  useEffect(() => { setPageIndex(0); }, [search, statusFilter]);
+  useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
 
   const filtered = certificates.filter((c) => {
     const name = c.enrollments?.students?.full_name ?? "";
@@ -44,8 +43,8 @@ export function CertificatesClient({
     return matchSearch && matchStatus;
   });
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData = filtered.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageData = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const columns = getCertificateColumns(canEdit);
 
@@ -81,7 +80,7 @@ export function CertificatesClient({
       <DataTable
         columns={columns}
         data={pageData}
-        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex }}
+        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex, pageSize, onPageSizeChange: setPageSize }}
       />
 
       {canEdit && (

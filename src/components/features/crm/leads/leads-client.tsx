@@ -39,7 +39,6 @@ import {
 } from "@/lib/domain/leads/schema";
 import type { LeadSource, LeadStatus } from "@/types/database.types";
 
-const PAGE_SIZE = 20;
 const STORAGE_KEY = "esmera:leads-view";
 const KANBAN_FIELDS_KEY = "esmera:leads-kanban-fields";
 type ViewMode = "table" | "kanban";
@@ -187,8 +186,9 @@ export function LeadsClient({
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isPendingAssign, startAssignTransition] = useTransition();
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
-  useEffect(() => { setPageIndex(0); }, [search, statusFilter]);
+  useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ViewMode | null;
@@ -235,8 +235,8 @@ export function LeadsClient({
     return matchSearch && matchStatus;
   });
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData = filtered.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageData = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id]);
 
@@ -421,7 +421,7 @@ export function LeadsClient({
         <DataTable
           columns={columns}
           data={pageData}
-          pagination={{ pageIndex, pageCount, onPageChange: setPageIndex }}
+          pagination={{ pageIndex, pageCount, onPageChange: setPageIndex, pageSize, onPageSizeChange: setPageSize }}
           rowSelection={
             canAssign
               ? {

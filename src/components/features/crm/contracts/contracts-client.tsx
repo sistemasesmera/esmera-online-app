@@ -16,8 +16,6 @@ import type { ContractStatus } from "@/types/database.types";
 
 const ALL_STATUSES = Object.entries(CONTRACT_STATUS_LABELS) as [ContractStatus, string][];
 
-const PAGE_SIZE = 20;
-
 export function ContractsClient({
   contracts,
   students,
@@ -33,8 +31,9 @@ export function ContractsClient({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ContractStatus | "">("");
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
-  useEffect(() => { setPageIndex(0); }, [search, statusFilter]);
+  useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
 
   const filtered = contracts.filter((c) => {
     const name = c.students?.full_name ?? "";
@@ -43,8 +42,8 @@ export function ContractsClient({
     return matchSearch && matchStatus;
   });
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData = filtered.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageData = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const columns = getContractColumns(canEdit);
 
@@ -80,7 +79,7 @@ export function ContractsClient({
       <DataTable
         columns={columns}
         data={pageData}
-        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex }}
+        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex, pageSize, onPageSizeChange: setPageSize }}
       />
 
       {canCreate && (

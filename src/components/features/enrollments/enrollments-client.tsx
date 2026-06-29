@@ -44,7 +44,6 @@ import {
 } from "@/lib/domain/enrollments/schema";
 import type { ContractStatus, EnrollmentStatus } from "@/types/database.types";
 
-const PAGE_SIZE = 20;
 const ALL_STATUSES = Object.entries(ENROLLMENT_STATUS_LABELS) as [EnrollmentStatus, string][];
 
 const PIPELINE_STEPS: {
@@ -125,13 +124,14 @@ export function EnrollmentsClient({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<EnrollmentStatus | "">("");
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [activating, setActivating] = useState<EnrollmentWithStudent | null>(null);
   const [assigning, setAssigning] = useState<EnrollmentWithStudent | null>(null);
   const [platformId, setPlatformId] = useState("");
   const [tutorId, setTutorId] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => { setPageIndex(0); }, [search, statusFilter]);
+  useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
 
   const counts = Object.fromEntries(
     (["pendiente", "validada", "activa", "finalizada"] as EnrollmentStatus[]).map((s) => [
@@ -149,8 +149,8 @@ export function EnrollmentsClient({
     return matchSearch && matchStatus;
   });
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData = filtered.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageData = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   function handleTransition(enrollment: EnrollmentWithStudent, next: EnrollmentStatus) {
     if (next === "activa") {
@@ -295,7 +295,7 @@ export function EnrollmentsClient({
         <DataTable
           columns={columns}
           data={pageData}
-          pagination={{ pageIndex, pageCount, onPageChange: setPageIndex }}
+          pagination={{ pageIndex, pageCount, onPageChange: setPageIndex, pageSize, onPageSizeChange: setPageSize }}
         />
       )}
 

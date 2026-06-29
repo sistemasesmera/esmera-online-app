@@ -15,8 +15,6 @@ import type { OpportunityWithJoins } from "@/lib/data/opportunities.repository";
 import type { PipelineStageRow } from "@/lib/data/pipeline-stages.repository";
 import type { UserRow } from "@/lib/data/users.repository";
 
-const PAGE_SIZE = 20;
-
 export function OpportunitiesClient({
   opportunities,
   leads,
@@ -38,8 +36,9 @@ export function OpportunitiesClient({
   const [editingOpp, setEditingOpp] = useState<OpportunityWithJoins | null>(null);
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
-  useEffect(() => { setPageIndex(0); }, [search]);
+  useEffect(() => { setPageIndex(0); }, [search, pageSize]);
 
   const filtered = opportunities.filter((o) => {
     if (!search) return true;
@@ -49,8 +48,8 @@ export function OpportunitiesClient({
     );
   });
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData = filtered.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageData = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const columns = getOpportunityColumns(setEditingOpp);
 
@@ -74,7 +73,7 @@ export function OpportunitiesClient({
       <DataTable
         columns={columns}
         data={pageData}
-        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex }}
+        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex, pageSize, onPageSizeChange: setPageSize }}
       />
 
       {canEdit && (

@@ -11,8 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { CourseRow } from "@/lib/data/courses.repository";
 
-const PAGE_SIZE = 20;
-
 export function CoursesClient({
   courses,
   canEdit,
@@ -24,8 +22,9 @@ export function CoursesClient({
   const [editingCourse, setEditingCourse] = useState<CourseRow | null>(null);
   const [search, setSearch] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
 
-  useEffect(() => { setPageIndex(0); }, [search]);
+  useEffect(() => { setPageIndex(0); }, [search, pageSize]);
 
   const filtered = courses.filter(
     (c) =>
@@ -33,8 +32,8 @@ export function CoursesClient({
       (c.code ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  const pageData = filtered.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+  const pageCount = Math.ceil(filtered.length / pageSize);
+  const pageData = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const columns = getCourseColumns(canEdit ? setEditingCourse : undefined);
 
@@ -56,7 +55,7 @@ export function CoursesClient({
       <DataTable
         columns={columns}
         data={pageData}
-        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex }}
+        pagination={{ pageIndex, pageCount, onPageChange: setPageIndex, pageSize, onPageSizeChange: setPageSize }}
       />
 
       {canEdit && (

@@ -27,6 +27,8 @@ export function DataTable<TData, TValue>({
     pageIndex: number;
     pageCount: number;
     onPageChange: (pageIndex: number) => void;
+    pageSize?: number;
+    onPageSizeChange?: (size: number) => void;
   };
   rowSelection?: {
     state: RowSelectionState;
@@ -99,32 +101,51 @@ export function DataTable<TData, TValue>({
         </Table>
       </div>
 
-      {pagination && pagination.pageCount > 1 && (
+      {pagination && (
         <div className="flex items-center justify-between gap-2 px-1">
-          <span className="text-sm text-muted-foreground">
-            Página <span className="font-medium text-foreground">{pagination.pageIndex + 1}</span> de{" "}
-            <span className="font-medium text-foreground">{pagination.pageCount}</span>
-          </span>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
-              disabled={pagination.pageIndex <= 0}
-              onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 w-8 p-0"
-              disabled={pagination.pageIndex >= pagination.pageCount - 1}
-              onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-3">
+            {pagination.onPageSizeChange && (
+              <select
+                value={pagination.pageSize}
+                onChange={(e) => {
+                  pagination.onPageSizeChange!(Number(e.target.value));
+                }}
+                className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+              >
+                {[5, 10, 20, 50].map((n) => (
+                  <option key={n} value={n}>{n} por página</option>
+                ))}
+              </select>
+            )}
+            {pagination.pageCount > 1 && (
+              <span className="text-sm text-muted-foreground">
+                Página <span className="font-medium text-foreground">{pagination.pageIndex + 1}</span> de{" "}
+                <span className="font-medium text-foreground">{pagination.pageCount}</span>
+              </span>
+            )}
           </div>
+          {pagination.pageCount > 1 && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={pagination.pageIndex <= 0}
+                onClick={() => pagination.onPageChange(pagination.pageIndex - 1)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                disabled={pagination.pageIndex >= pagination.pageCount - 1}
+                onClick={() => pagination.onPageChange(pagination.pageIndex + 1)}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
