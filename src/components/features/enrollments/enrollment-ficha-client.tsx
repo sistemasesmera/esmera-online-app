@@ -646,6 +646,8 @@ export function EnrollmentFichaClient({
                           {contract.sent_at && (
                             <p className="text-[10px] text-muted-foreground leading-4">
                               {new Date(contract.sent_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+                              {" · "}
+                              {new Date(contract.sent_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
                               {student?.email ? ` · ${student.email}` : ""}
                             </p>
                           )}
