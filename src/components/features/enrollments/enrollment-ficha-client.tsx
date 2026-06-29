@@ -638,6 +638,8 @@ export function EnrollmentFichaClient({
                           {contract.signed_at && (
                             <p className="text-[10px] text-muted-foreground leading-4">
                               {new Date(contract.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+                              {" · "}
+                              {new Date(contract.signed_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
                             </p>
                           )}
                           {contract.document_url && contract.status === "firmado" && (
