@@ -30,7 +30,7 @@ export async function POST(
     const apiKey = process.env.DOCUSEAL_API_KEY;
     if (apiKey) {
       try {
-        const res = await fetch(`https://api.docuseal.com/submissions/${submissionId}`, {
+        const res = await fetch(`https://api.docuseal.eu/submissions/${submissionId}`, {
           method: "DELETE",
           headers: { "X-Auth-Token": apiKey },
         });

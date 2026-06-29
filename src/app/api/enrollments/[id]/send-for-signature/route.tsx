@@ -121,7 +121,7 @@ export async function POST(
     const apiKey = process.env.DOCUSEAL_API_KEY;
     if (!apiKey) return Response.json({ error: "DocuSeal no configurado" }, { status: 500 });
 
-    const docusealRes = await fetch("https://api.docuseal.com/submissions/pdf", {
+    const docusealRes = await fetch("https://api.docuseal.eu/submissions/pdf", {
       method: "POST",
       headers: {
         "X-Auth-Token": apiKey,
@@ -162,8 +162,8 @@ export async function POST(
 
     if (!docusealRes.ok) {
       const errText = await docusealRes.text();
-      console.error("[send-for-signature] DocuSeal error:", errText);
-      return Response.json({ error: "Error al enviar a DocuSeal" }, { status: 502 });
+      console.error("[send-for-signature] DocuSeal error:", docusealRes.status, errText);
+      return Response.json({ error: `DocuSeal ${docusealRes.status}: ${errText}` }, { status: 502 });
     }
 
     const docusealData = await docusealRes.json();
