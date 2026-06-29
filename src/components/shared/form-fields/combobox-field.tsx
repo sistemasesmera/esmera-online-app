@@ -55,7 +55,7 @@ export function ComboboxField<TFieldValues extends FieldValues>({
               <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
                 <Command>
                   <CommandInput placeholder={placeholder} />
-                  <CommandList>
+                  <CommandList className="max-h-48 overflow-y-auto">
                     <CommandEmpty>{emptyMessage}</CommandEmpty>
                     <CommandGroup>
                       {options.map((option) => (

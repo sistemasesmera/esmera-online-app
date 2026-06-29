@@ -7,23 +7,39 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
+function parseLocalDate(value: string): Date {
+  const [y, m, d] = value.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatLocalDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function DatePickerField<TFieldValues extends FieldValues>({
   label,
   name,
   control,
   placeholder = "Selecciona una fecha",
+  fromYear = 1940,
+  toYear = new Date().getFullYear(),
 }: {
   label: string;
   name: FieldPath<TFieldValues>;
   control: Control<TFieldValues>;
   placeholder?: string;
+  fromYear?: number;
+  toYear?: number;
 }) {
   return (
     <Controller
       name={name}
       control={control}
       render={({ field, fieldState }) => {
-        const selectedDate: Date | undefined = field.value ? new Date(field.value) : undefined;
+        const selectedDate: Date | undefined = field.value ? parseLocalDate(field.value) : undefined;
 
         return (
           <Field data-invalid={!!fieldState.error}>
@@ -45,7 +61,11 @@ export function DatePickerField<TFieldValues extends FieldValues>({
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={(date) => field.onChange(date ? date.toISOString().slice(0, 10) : null)}
+                  onSelect={(date) => field.onChange(date ? formatLocalDate(date) : null)}
+                  captionLayout="dropdown"
+                  fromYear={fromYear}
+                  toYear={toYear}
+                  defaultMonth={selectedDate ?? new Date(toYear - 25, 0)}
                 />
               </PopoverContent>
             </Popover>

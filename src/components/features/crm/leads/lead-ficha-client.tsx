@@ -383,7 +383,7 @@ export function LeadFichaClient({
 
       {/* Convert to student dialog */}
       <Dialog open={convertOpen} onOpenChange={setConvertOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Matricular: {lead.full_name}</DialogTitle>
           </DialogHeader>
