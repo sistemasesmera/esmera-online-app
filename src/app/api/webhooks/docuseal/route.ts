@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
     const { data: contract, error: findError } = await supabase
       .from("contracts")
       .select("id, enrollment_id")
-      .eq("docuseal_submission_id", submissionId)
+      .filter("docuseal_submission_id", "eq", submissionId)
       .single();
 
     if (findError || !contract) {
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest) {
     const { data: contract } = await supabase
       .from("contracts")
       .select("id, enrollment_id")
-      .eq("docuseal_submission_id", submissionId)
+      .filter("docuseal_submission_id", "eq", submissionId)
       .single();
 
     if (contract) {
