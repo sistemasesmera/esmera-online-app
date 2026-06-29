@@ -20,7 +20,8 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import {
@@ -252,6 +253,7 @@ export function EnrollmentFichaClient({
   canFollowup: boolean;
   currentUserName?: string;
 }) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isUploading, startUpload] = useTransition();
   const [isCertUploading, startCertUpload] = useTransition();
@@ -271,6 +273,21 @@ export function EnrollmentFichaClient({
   const [certPendingFile, setCertPendingFile] = useState<File | null>(null);
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
+
+  // Auto-refresh when contract status changes (e.g. signed via DocuSeal webhook)
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`contract-${enrollment.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "contracts", filter: `enrollment_id=eq.${enrollment.id}` },
+        () => { router.refresh(); }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [enrollment.id, router]);
 
   const student = enrollment.students;
   const contract = enrollment.contracts?.[0];
