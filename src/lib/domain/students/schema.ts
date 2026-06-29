@@ -12,7 +12,7 @@ export const STUDENT_STATUS_LABELS: Record<StudentStatus, string> = {
 export const createStudentSchema = z.object({
   first_name: z.string().min(1, "Requerido"),
   last_name: z.string().min(1, "Requerido"),
-  dni_nie: z.string().min(1, "Requerido"),
+  dni_nie: z.string().min(1, "Requerido").transform((v) => v.trim().toUpperCase()),
   email: z.string().email("Email inválido"),
   phone: z.string().optional(),
   address: z.string().optional(),
@@ -29,7 +29,7 @@ export const updateStudentSchema = createStudentSchema.extend({
 export const convertLeadSchema = z.object({
   first_name:    z.string().min(1, "Requerido"),
   last_name:     z.string().min(1, "Requerido"),
-  dni_nie:       z.string().min(1, "Requerido"),
+  dni_nie:       z.string().min(1, "Requerido").transform((v) => v.trim().toUpperCase()),
   email:         z.string().email("Email inválido"),
   phone:         z.string().min(1, "Requerido"),
   address:       z.string().min(1, "Requerida"),
