@@ -8,8 +8,8 @@ const ENDPOINT = "/api/public/leads";
 
 const fields = [
   { name: "full_name",         type: "string", required: true,  desc: "Nombre completo del lead" },
+  { name: "phone",             type: "string", required: true,  desc: "Teléfono de contacto (sin duplicados entre leads ni alumnos)" },
   { name: "email",             type: "string", required: false, desc: "Correo electrónico" },
-  { name: "phone",             type: "string", required: false, desc: "Teléfono de contacto" },
   { name: "source",            type: "enum",   required: false, desc: "Origen: web · meta_ads · organico  (por defecto: web)" },
   { name: "interested_course", type: "string", required: false, desc: "Nombre del curso de interés" },
   { name: "notes",             type: "string", required: false, desc: "Notas adicionales" },
@@ -151,6 +151,8 @@ export default function ApiPage() {
                 <tbody>
                   {[
                     ["401", "API key inválida o ausente"],
+                    ["409 duplicate_lead", "Ya existe un lead con ese teléfono"],
+                    ["409 already_student", "El teléfono pertenece a un alumno ya registrado"],
                     ["422", "Campos requeridos faltantes o valores inválidos"],
                     ["500", "Error interno del servidor"],
                   ].map(([code, reason], i) => (
