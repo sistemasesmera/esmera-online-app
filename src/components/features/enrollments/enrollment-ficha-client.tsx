@@ -19,7 +19,6 @@ import {
   Paperclip,
   Plus,
   Send,
-  Trash2,
   Upload,
   User,
 } from "lucide-react";
@@ -31,8 +30,8 @@ import { toast } from "sonner";
 import {
   activateEnrollment,
   assignTutor,
-  deleteSignedContract,
-  signContractForEnrollment,
+
+
   updateEnrollmentStatus,
 } from "@/app/(app)/enrollments/actions";
 import { attachCertificateDocument, createCertificate } from "@/app/(app)/certificates/actions";
@@ -259,19 +258,14 @@ export function EnrollmentFichaClient({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [isUploading, startUpload] = useTransition();
   const [isCertUploading, startCertUpload] = useTransition();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const certFileInputRef = useRef<HTMLInputElement>(null);
 
   // Dialog states
   const [activateOpen, setActivateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
-  const [signOpen, setSignOpen] = useState(false);
-  const [deleteContractOpen, setDeleteContractOpen] = useState(false);
   const [followupOpen, setFollowupOpen] = useState(false);
   const [certDocOpen, setCertDocOpen] = useState(false);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSendingForSignature, setIsSendingForSignature] = useState(false);
   const [sendSignatureOpen, setSendSignatureOpen] = useState(false);
@@ -325,20 +319,6 @@ export function EnrollmentFichaClient({
     });
   }
 
-  function handleDeleteContract() {
-    startTransition(async () => {
-      const result = await deleteSignedContract(enrollment.id, contract?.document_url ?? null);
-      if (result.error) toast.error(result.error);
-      else { toast.success("Contrato eliminado. Puedes subir uno nuevo."); setDeleteContractOpen(false); }
-    });
-  }
-
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) setPendingFile(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }
-
   function openSendSignatureDialog() {
     setSignatureEmail(student?.email ?? "");
     setSendSignatureOpen(true);
@@ -387,47 +367,6 @@ export function EnrollmentFichaClient({
     }
   }
 
-
-  function handleSign() {
-    if (!pendingFile) return;
-    const file = pendingFile;
-    const hasPendingDigital = contract?.status === "enviado" && !!contract?.docuseal_submission_id;
-    startUpload(async () => {
-      // If there's a pending digital signature, cancel it first
-      if (hasPendingDigital) {
-        const cancelRes = await fetch(`/api/enrollments/${enrollment.id}/cancel-signature`, { method: "POST" });
-        if (!cancelRes.ok) {
-          toast.error("No se pudo cancelar la firma digital pendiente");
-          return;
-        }
-      }
-
-      const supabase = createClient();
-      const ext = file.name.split(".").pop() ?? "pdf";
-      const path = `contracts/${enrollment.id}/${crypto.randomUUID()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET)
-        .upload(path, file, { contentType: file.type, upsert: false });
-
-      if (uploadError) {
-        toast.error(`Error al subir el archivo: ${uploadError.message}`);
-        return;
-      }
-
-      const { data: urlData } = await supabase.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 24 * 365);
-      const result = await signContractForEnrollment(enrollment.id, urlData?.signedUrl ?? path);
-      if (result.error) {
-        toast.error(result.error);
-        await supabase.storage.from(BUCKET).remove([path]);
-      } else {
-        toast.success("Contrato firmado y adjuntado");
-        setSignOpen(false);
-        setPendingFile(null);
-        router.refresh();
-      }
-    });
-  }
 
   function handleCertFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -748,23 +687,6 @@ export function EnrollmentFichaClient({
                     </Button>
                   )}
 
-                  {canSign && contract.status === "firmado" && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive border-destructive/40 hover:bg-destructive/10"
-                      onClick={() => setDeleteContractOpen(true)}
-                    >
-                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                      Eliminar contrato firmado
-                    </Button>
-                  )}
-                  {canSign && contract.status !== "firmado" && contract.status !== "anulado" && (
-                    <Button size="sm" variant="outline" onClick={() => setSignOpen(true)}>
-                      <Upload className="mr-1.5 h-3.5 w-3.5" />
-                      Subir contrato firmado
-                    </Button>
-                  )}
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">Sin contrato asociado.</p>
@@ -1129,87 +1051,6 @@ export function EnrollmentFichaClient({
             >
               <Send className="h-3.5 w-3.5" />
               Enviar para firma
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete signed contract confirmation */}
-      <Dialog open={deleteContractOpen} onOpenChange={(v) => !v && setDeleteContractOpen(false)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>¿Eliminar contrato firmado?</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Se eliminará el documento adjunto y el contrato volverá a estado <strong>Borrador</strong>. Podrás subir uno nuevo a continuación.
-            </p>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteContractOpen(false)} disabled={isPending}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteContract} disabled={isPending}>
-              {isPending ? "Eliminando…" : "Sí, eliminar"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Sign contract */}
-      <Dialog open={signOpen} onOpenChange={(v) => { if (!v) { setSignOpen(false); setPendingFile(null); } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Subir contrato firmado</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              Adjunta el PDF o documento con la firma del cliente para registrar el contrato como firmado.
-            </p>
-          </DialogHeader>
-          {contract?.status === "enviado" && contract?.docuseal_submission_id && (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800">
-              <span className="mt-0.5 shrink-0">⚠️</span>
-              <span>Hay una firma digital pendiente. Al subir este archivo, el enlace enviado al alumno quedará cancelado.</span>
-            </div>
-          )}
-          <div className="flex flex-col gap-3 py-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-              onChange={handleFileSelect}
-            />
-            {pendingFile ? (
-              <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
-                <FileCheck2 className="h-5 w-5 text-emerald-600 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{pendingFile.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(pendingFile.size / 1024).toFixed(0)} KB
-                  </p>
-                </div>
-                <button
-                  onClick={() => setPendingFile(null)}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Cambiar
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border p-6 text-center hover:bg-muted/40 transition-colors cursor-pointer"
-              >
-                <Upload className="h-6 w-6 text-muted-foreground" />
-                <span className="text-sm font-medium">Seleccionar documento</span>
-                <span className="text-xs text-muted-foreground">PDF, Word o imagen</span>
-              </button>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setSignOpen(false); setPendingFile(null); }} disabled={isUploading}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSign} disabled={!pendingFile || isUploading}>
-              {isUploading ? "Subiendo…" : "Marcar como firmado"}
             </Button>
           </DialogFooter>
         </DialogContent>
