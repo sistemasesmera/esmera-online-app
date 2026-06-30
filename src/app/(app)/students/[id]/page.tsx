@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { StudentDetailClient } from "@/components/features/students/student-detail-client";
 import { requireRole } from "@/lib/auth/require-role";
 import { getActivityByStudent, getLeadActivityForStudent } from "@/lib/data/activity-logs.repository";
-import { getAttachmentsByStudent } from "@/lib/data/attachments.repository";
+import { getAttachmentsByStudent, getAttachmentsByEnrollments } from "@/lib/data/attachments.repository";
 import { getCertificatesByEnrollments } from "@/lib/data/certificates.repository";
 import { listCourses } from "@/lib/data/courses.repository";
 import { getEnrollmentsByStudent } from "@/lib/data/enrollments.repository";
@@ -30,10 +30,11 @@ export default async function StudentDetailPage({
   if (!student) notFound();
 
   const enrollmentIds = enrollments.map((e) => e.id);
-  const [followups, certificates, attachments, activityLogs, leadActivityLogs] = await Promise.all([
+  const [followups, certificates, attachments, enrollmentAttachments, activityLogs, leadActivityLogs] = await Promise.all([
     getFollowupsByEnrollments(enrollmentIds),
     getCertificatesByEnrollments(enrollmentIds),
     getAttachmentsByStudent(id),
+    getAttachmentsByEnrollments(enrollmentIds),
     getActivityByStudent(id),
     getLeadActivityForStudent(id),
   ]);
@@ -50,6 +51,7 @@ export default async function StudentDetailPage({
       followups={followups}
       certificates={certificates}
       attachments={attachments}
+      enrollmentAttachments={enrollmentAttachments}
       activityLogs={activityLogs}
       leadActivityLogs={leadActivityLogs}
       courses={courses}
