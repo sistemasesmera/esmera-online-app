@@ -189,6 +189,13 @@ export async function POST(
       return Response.json({ error: "Error al actualizar el estado del contrato" }, { status: 500 });
     }
 
+    await adminClient.from("contract_events").insert({
+      contract_id: contract.id,
+      enrollment_id: id,
+      event_type: "sent",
+      email: recipientEmail,
+    } as never);
+
     revalidatePath(`/enrollments/${id}`);
     revalidatePath("/enrollments");
 

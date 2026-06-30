@@ -101,6 +101,13 @@ export async function POST(req: NextRequest) {
       console.log(tag, "Contract marked firmado. signed_at:", signedAt);
     }
 
+    await supabase.from("contract_events").insert({
+      contract_id: contract.id,
+      enrollment_id: contract.enrollment_id,
+      event_type: "signed",
+      occurred_at: signedAt,
+    } as never);
+
     if (contract.enrollment_id) {
       revalidatePath(`/enrollments/${contract.enrollment_id}`);
     }
@@ -152,6 +159,11 @@ export async function POST(req: NextRequest) {
         .update({ status: "borrador", docuseal_submission_id: null, docuseal_signing_url: null, sent_at: null } as never)
         .eq("id", contract.id);
       if (updateError) console.error(tag, "Expired update error:", updateError.message);
+      await supabase.from("contract_events").insert({
+        contract_id: contract.id,
+        enrollment_id: contract.enrollment_id,
+        event_type: "expired",
+      } as never);
       if (contract.enrollment_id) revalidatePath(`/enrollments/${contract.enrollment_id}`);
       console.log(tag, "Submission expired — contract reverted to borrador");
     }
@@ -170,6 +182,7 @@ export async function POST(req: NextRequest) {
 
     if (contract) {
       const declinedAt = (data as { declined_at?: string }).declined_at ?? new Date().toISOString();
+      const declineReason = (data as { decline_reason?: string }).decline_reason ?? null;
       const { error: updateError } = await supabase
         .from("contracts")
         .update({
@@ -181,6 +194,13 @@ export async function POST(req: NextRequest) {
         } as never)
         .eq("id", contract.id);
       if (updateError) console.error(tag, "Declined update error:", updateError.message);
+      await supabase.from("contract_events").insert({
+        contract_id: contract.id,
+        enrollment_id: contract.enrollment_id,
+        event_type: "declined",
+        occurred_at: declinedAt,
+        decline_reason: declineReason,
+      } as never);
       if (contract.enrollment_id) revalidatePath(`/enrollments/${contract.enrollment_id}`);
       console.log(tag, "Form declined — contract reverted to borrador with declined_at:", declinedAt);
     }

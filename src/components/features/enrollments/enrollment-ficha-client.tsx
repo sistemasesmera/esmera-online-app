@@ -21,6 +21,8 @@ import {
   Send,
   Upload,
   User,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -61,6 +63,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { EnrollmentAttachmentsTab } from "@/components/features/enrollments/enrollment-attachments-tab";
 import type { ActivityLogRow } from "@/lib/data/activity-logs.repository";
+import type { ContractEventRow } from "@/lib/data/contract-events.repository";
 import type { AttachmentWithUrl } from "@/lib/data/attachments.shared";
 import type { CertificateWithJoins } from "@/lib/data/certificates.repository";
 import type { EnrollmentFicha } from "@/lib/data/enrollments.repository";
@@ -238,6 +241,7 @@ export function EnrollmentFichaClient({
   attachments,
   studentAttachments,
   activityLogs,
+  contractEvents,
   canEdit,
   canSign,
   canFollowup,
@@ -251,6 +255,7 @@ export function EnrollmentFichaClient({
   attachments: AttachmentWithUrl[];
   studentAttachments: AttachmentWithUrl[];
   activityLogs: ActivityLogRow[];
+  contractEvents: ContractEventRow[];
   canEdit: boolean;
   canSign: boolean;
   canFollowup: boolean;
@@ -275,14 +280,22 @@ export function EnrollmentFichaClient({
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
 
-  const contractStatus = enrollment.contracts?.[0]?.status;
-
-  // Poll for contract updates while awaiting signature
+  // Realtime: refresh whenever a new contract event arrives
   useEffect(() => {
-    if (contractStatus !== "enviado") return;
-    const interval = setInterval(() => router.refresh(), 10_000);
-    return () => clearInterval(interval);
-  }, [contractStatus, router]);
+    const contractId = contract?.id;
+    if (!contractId) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`contract-events-${contractId}`)
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "contract_events",
+        filter: `contract_id=eq.${contractId}`,
+      }, () => router.refresh())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [contract?.id, router]);
 
   const student = enrollment.students;
   const contract = enrollment.contracts?.[0];
@@ -423,6 +436,11 @@ export function EnrollmentFichaClient({
   const fmtDate = (d: string | null) =>
     d ? new Date(d + "T00:00:00").toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" }) : "—";
 
+  const fmtDateTime = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" })} · ${d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}`;
+  };
+
   return (
     <>
       {/* ── Header ── */}
@@ -559,27 +577,8 @@ export function EnrollmentFichaClient({
                       )}
                     </div>
                   )}
-                  {/* Rechazado por el alumno */}
-                  {contract.declined_at && contract.status === "borrador" && (
-                    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 flex flex-col gap-1.5">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-red-600">
-                        Contrato rechazado
-                      </p>
-                      <div className="flex items-start gap-2">
-                        <div>
-                          <p className="text-xs font-medium text-red-700 leading-5">El alumno rechazó el contrato</p>
-                          <p className="text-[10px] text-red-500 leading-4">
-                            {new Date(contract.declined_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
-                            {" · "}
-                            {new Date(contract.declined_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Contrato firmado manualmente (subido) */}
-                  {contract.status === "firmado" && !contract.docuseal_submission_id && (
+                  {contract.status === "firmado" && !contract.docuseal_submission_id && contractEvents.length === 0 && (
                     <div className="rounded-lg border bg-muted/30 px-3 py-2.5 flex flex-col gap-1.5">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                         Contrato firmado
@@ -590,9 +589,7 @@ export function EnrollmentFichaClient({
                           <p className="text-xs font-medium leading-5">Subido manualmente</p>
                           {contract.signed_at && (
                             <p className="text-[10px] text-muted-foreground leading-4">
-                              {new Date(contract.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
-                              {" · "}
-                              {new Date(contract.signed_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+                              {fmtDateTime(contract.signed_at)}
                             </p>
                           )}
                           {contract.document_url && (
@@ -607,67 +604,110 @@ export function EnrollmentFichaClient({
                     </div>
                   )}
 
-                  {/* Firma electrónica: tracker de estado */}
-                  {contract.docuseal_submission_id && (
-                    <div className="rounded-lg border bg-muted/30 px-3 py-2.5 flex flex-col gap-0">
+                  {/* Línea del tiempo de firma electrónica */}
+                  {(contractEvents.length > 0 || contract.docuseal_submission_id || contract.declined_at) && (
+                    <div className="rounded-lg border bg-muted/30 px-3 py-2.5">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                        Firma electrónica
+                        Historial de firma
                       </p>
-
-                      {/* Paso 1: Generado */}
-                      <div className="flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                        <p className="text-xs font-medium leading-5">Contrato generado</p>
-                      </div>
-                      <div className="ml-[7px] w-px h-3 bg-border" />
-
-                      {/* Paso 2: Enviado */}
-                      <div className="flex items-start gap-2">
-                        {contract.sent_at
-                          ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                          : <Circle className="h-4 w-4 text-muted-foreground/30 mt-0.5 shrink-0" />}
-                        <div>
-                          <p className={`text-xs font-medium leading-5 ${!contract.sent_at ? "text-muted-foreground" : ""}`}>
-                            Enviado para firma
-                          </p>
-                          {contract.sent_at && (
-                            <p className="text-[10px] text-muted-foreground leading-4">
-                              {new Date(contract.sent_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
-                              {" · "}
-                              {new Date(contract.sent_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
-                              {student?.email ? ` · ${student.email}` : ""}
-                            </p>
-                          )}
+                      <div className="flex flex-col">
+                        {/* Paso siempre visible: contrato generado */}
+                        <div className="flex items-start gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                          <p className="text-xs font-medium leading-5">Contrato generado</p>
                         </div>
-                      </div>
-                      <div className="ml-[7px] w-px h-3 bg-border" />
 
-                      {/* Paso 3: Firmado */}
-                      <div className="flex items-start gap-2">
-                        {contract.status === "firmado"
-                          ? <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                          : contract.status === "enviado"
-                          ? <Clock className="h-4 w-4 text-blue-500 mt-0.5 shrink-0 animate-pulse" />
-                          : <Circle className="h-4 w-4 text-muted-foreground/30 mt-0.5 shrink-0" />}
-                        <div>
-                          <p className={`text-xs font-medium leading-5 ${contract.status === "enviado" ? "text-blue-700" : contract.status !== "firmado" ? "text-muted-foreground" : ""}`}>
-                            {contract.status === "enviado" ? "Pendiente de firma" : "Firmado digitalmente"}
-                          </p>
-                          {contract.signed_at && (
-                            <p className="text-[10px] text-muted-foreground leading-4">
-                              {new Date(contract.signed_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
-                              {" · "}
-                              {new Date(contract.signed_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
-                            </p>
-                          )}
-                          {contract.document_url && contract.status === "firmado" && (
-                            <a href={contract.document_url} target="_blank" rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 hover:underline leading-4">
-                              <ExternalLink className="h-3 w-3" />
-                              Ver PDF firmado
-                            </a>
-                          )}
-                        </div>
+                        {/* Eventos del historial */}
+                        {contractEvents.map((ev) => {
+                          if (ev.event_type === "sent") return (
+                            <div key={ev.id}>
+                              <div className="ml-[7px] w-px h-3 bg-border" />
+                              <div className="flex items-start gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-xs font-medium leading-5">Enviado para firma</p>
+                                  <p className="text-[10px] text-muted-foreground leading-4">
+                                    {fmtDateTime(ev.occurred_at)}{ev.email ? ` · ${ev.email}` : ""}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                          if (ev.event_type === "declined") return (
+                            <div key={ev.id}>
+                              <div className="ml-[7px] w-px h-3 bg-border" />
+                              <div className="flex items-start gap-2">
+                                <XCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-xs font-medium text-red-700 leading-5">Rechazado por el alumno</p>
+                                  <p className="text-[10px] text-muted-foreground leading-4">
+                                    {fmtDateTime(ev.occurred_at)}
+                                    {ev.decline_reason ? ` · "${ev.decline_reason}"` : ""}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                          if (ev.event_type === "signed") return (
+                            <div key={ev.id}>
+                              <div className="ml-[7px] w-px h-3 bg-border" />
+                              <div className="flex items-start gap-2">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-xs font-medium leading-5">Firmado digitalmente</p>
+                                  <p className="text-[10px] text-muted-foreground leading-4">{fmtDateTime(ev.occurred_at)}</p>
+                                  {contract.document_url && (
+                                    <a href={contract.document_url} target="_blank" rel="noreferrer"
+                                      className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 hover:underline leading-4">
+                                      <ExternalLink className="h-3 w-3" />
+                                      Ver PDF firmado
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                          if (ev.event_type === "expired") return (
+                            <div key={ev.id}>
+                              <div className="ml-[7px] w-px h-3 bg-border" />
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                                <div>
+                                  <p className="text-xs font-medium text-muted-foreground leading-5">Enlace caducado</p>
+                                  <p className="text-[10px] text-muted-foreground leading-4">{fmtDateTime(ev.occurred_at)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                          return null;
+                        })}
+
+                        {/* Fallback para contratos legacy sin eventos pero con sent_at */}
+                        {contractEvents.length === 0 && contract.sent_at && (
+                          <div>
+                            <div className="ml-[7px] w-px h-3 bg-border" />
+                            <div className="flex items-start gap-2">
+                              <CheckCircle2 className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+                              <div>
+                                <p className="text-xs font-medium leading-5">Enviado para firma</p>
+                                <p className="text-[10px] text-muted-foreground leading-4">
+                                  {fmtDateTime(contract.sent_at)}{student?.email ? ` · ${student.email}` : ""}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Estado actual si sigue pendiente */}
+                        {contract.status === "enviado" && (
+                          <div>
+                            <div className="ml-[7px] w-px h-3 bg-border" />
+                            <div className="flex items-start gap-2">
+                              <Clock className="h-4 w-4 text-blue-500 mt-0.5 shrink-0 animate-pulse" />
+                              <p className="text-xs font-medium text-blue-700 leading-5">Pendiente de firma</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

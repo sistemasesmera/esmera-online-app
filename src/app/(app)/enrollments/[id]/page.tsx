@@ -6,6 +6,7 @@ import { EnrollmentFichaClient } from "@/components/features/enrollments/enrollm
 import { requireRole } from "@/lib/auth/require-role";
 import { getActivityByEnrollment } from "@/lib/data/activity-logs.repository";
 import { getCertificatesByEnrollments } from "@/lib/data/certificates.repository";
+import { getContractEvents } from "@/lib/data/contract-events.repository";
 import { getEnrollmentById } from "@/lib/data/enrollments.repository";
 import { getFollowupsByEnrollments } from "@/lib/data/followups.repository";
 import { listPlatforms } from "@/lib/data/platforms.repository";
@@ -29,12 +30,15 @@ export default async function EnrollmentFichaPage({
   const supabase = await createClient();
   const studentId = enrollment.students?.id ?? null;
 
-  const [followups, certificates, platforms, tutors, activityLogs, enrollmentAttachmentsRaw, studentAttachmentsRaw] = await Promise.all([
+  const contractId = enrollment.contracts?.[0]?.id ?? null;
+
+  const [followups, certificates, platforms, tutors, activityLogs, contractEvents, enrollmentAttachmentsRaw, studentAttachmentsRaw] = await Promise.all([
     getFollowupsByEnrollments([id]),
     getCertificatesByEnrollments([id]),
     listPlatforms(),
     listActiveTutors(),
     getActivityByEnrollment(id),
+    contractId ? getContractEvents(contractId) : Promise.resolve([]),
     supabase
       .from("student_attachments")
       .select("*, users!uploaded_by(full_name)")
@@ -91,6 +95,7 @@ export default async function EnrollmentFichaPage({
         attachments={attachments}
         studentAttachments={studentAttachments}
         activityLogs={activityLogs}
+        contractEvents={contractEvents}
         canEdit={canEdit}
         canSign={canSign}
         canFollowup={canFollowup}
