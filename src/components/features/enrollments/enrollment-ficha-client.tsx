@@ -281,8 +281,8 @@ export function EnrollmentFichaClient({
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
 
   // Realtime: refresh whenever a new contract event arrives
+  const contractId = enrollment.contracts?.[0]?.id ?? null;
   useEffect(() => {
-    const contractId = contract?.id;
     if (!contractId) return;
     const supabase = createClient();
     const channel = supabase
@@ -295,7 +295,7 @@ export function EnrollmentFichaClient({
       }, () => router.refresh())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [contract?.id, router]);
+  }, [contractId, router]);
 
   const student = enrollment.students;
   const contract = enrollment.contracts?.[0];
