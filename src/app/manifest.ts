@@ -14,7 +14,7 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/esmera-logo.png",
         sizes: "any",
         type: "image/png",
-        purpose: "any maskable",
+        purpose: "maskable",
       },
     ],
   };
