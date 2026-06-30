@@ -275,6 +275,7 @@ export function EnrollmentFichaClient({
   const [isSendingForSignature, setIsSendingForSignature] = useState(false);
   const [sendSignatureOpen, setSendSignatureOpen] = useState(false);
   const [signatureEmail, setSignatureEmail] = useState("");
+  const [signatureExpiry, setSignatureExpiry] = useState("15d");
   const [freshSigningUrl, setFreshSigningUrl] = useState<string | null>(null);
   const [certPendingFile, setCertPendingFile] = useState<File | null>(null);
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
@@ -353,7 +354,7 @@ export function EnrollmentFichaClient({
       const res = await fetch(`/api/enrollments/${enrollment.id}/send-for-signature`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: signatureEmail.trim() }),
+        body: JSON.stringify({ email: signatureEmail.trim(), expiry: signatureExpiry }),
       });
       const json = await res.json();
       if (!res.ok) toast.error(json.error ?? "Error al enviar para firma");
@@ -1109,6 +1110,30 @@ export function EnrollmentFichaClient({
                 onChange={(e) => setSignatureEmail(e.target.value)}
                 placeholder="correo@ejemplo.com"
               />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Tiempo para firmar</Label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { value: "1m", label: "1 min" },
+                  { value: "5d", label: "5 días" },
+                  { value: "10d", label: "10 días" },
+                  { value: "15d", label: "15 días" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSignatureExpiry(opt.value)}
+                    className={`rounded-md border px-2 py-1.5 text-xs font-semibold transition-colors cursor-pointer ${
+                      signatureExpiry === opt.value
+                        ? "bg-indigo-600 border-indigo-600 text-white"
+                        : "border-border text-muted-foreground hover:border-indigo-400 hover:text-foreground"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <DialogFooter>

@@ -43,11 +43,21 @@ export async function POST(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-    // Optional override email from request body
+    // Parse request body
     let overrideEmail: string | null = null;
+    let expiryMs = 15 * 24 * 60 * 60 * 1000; // default 15 days
     try {
       const body = await req.json();
       if (body?.email && typeof body.email === "string") overrideEmail = body.email.trim();
+      if (body?.expiry && typeof body.expiry === "string") {
+        const expiryMap: Record<string, number> = {
+          "1m":  1 * 60 * 1000,
+          "5d":  5 * 24 * 60 * 60 * 1000,
+          "10d": 10 * 24 * 60 * 60 * 1000,
+          "15d": 15 * 24 * 60 * 60 * 1000,
+        };
+        expiryMs = expiryMap[body.expiry] ?? expiryMs;
+      }
     } catch { /* no body is fine */ }
 
     const { data: enrollment, error } = await supabase
@@ -148,7 +158,7 @@ export async function POST(
             }],
           }],
         }],
-        expire_at: new Date(Date.now() + 1 * 60 * 1000).toISOString(),
+        expire_at: new Date(Date.now() + expiryMs).toISOString(),
         submitters: [{
           name: student.full_name,
           email: recipientEmail,
