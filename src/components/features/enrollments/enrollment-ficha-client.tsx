@@ -280,8 +280,11 @@ export function EnrollmentFichaClient({
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
 
+  const student = enrollment.students;
+  const contract = enrollment.contracts?.[0];
+
   // Realtime: refresh whenever a new contract event arrives
-  const contractId = enrollment.contracts?.[0]?.id ?? null;
+  const contractId = contract?.id ?? null;
   useEffect(() => {
     if (!contractId) return;
     const supabase = createClient();
@@ -297,8 +300,13 @@ export function EnrollmentFichaClient({
     return () => { supabase.removeChannel(channel); };
   }, [contractId, router]);
 
-  const student = enrollment.students;
-  const contract = enrollment.contracts?.[0];
+  // Clear freshSigningUrl when the server refreshes with a new contract status
+  // (e.g. declined or signed) so the correct buttons appear immediately
+  useEffect(() => {
+    if (contract?.status !== "enviado") {
+      setFreshSigningUrl(null);
+    }
+  }, [contract?.status]);
   const nextStatuses = ENROLLMENT_STATUS_TRANSITIONS[enrollment.status];
   const isActiva = enrollment.status === "activa";
   const isValidada = enrollment.status === "validada";
