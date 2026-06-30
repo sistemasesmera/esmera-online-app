@@ -165,6 +165,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      contract_events: {
+        Row: {
+          id: string;
+          contract_id: string;
+          enrollment_id: string | null;
+          event_type: string;
+          occurred_at: string;
+          email: string | null;
+          decline_reason: string | null;
+        };
+        Insert: {
+          contract_id: string;
+          enrollment_id?: string | null;
+          event_type: string;
+          occurred_at?: string;
+          email?: string | null;
+          decline_reason?: string | null;
+        };
+        Update: Partial<Database["public"]["Tables"]["contract_events"]["Insert"]>;
+        Relationships: [];
+      };
       contracts: {
         Row: {
           id: string;
@@ -180,6 +201,10 @@ export type Database = {
           financed_amount: number | null;
           document_url: string | null;
           signed_at: string | null;
+          sent_at: string | null;
+          docuseal_submission_id: string | null;
+          docuseal_signing_url: string | null;
+          declined_at: string | null;
           created_by: string;
           created_at: string;
           updated_at: string;
@@ -201,6 +226,12 @@ export type Database = {
         };
         Update: Partial<Omit<Database["public"]["Tables"]["contracts"]["Insert"], "created_by">> & {
           signed_at?: string | null;
+          sent_at?: string | null;
+          docuseal_submission_id?: string | null;
+          docuseal_signing_url?: string | null;
+          declined_at?: string | null;
+          status?: ContractStatus;
+          document_url?: string | null;
         };
         Relationships: [];
       };

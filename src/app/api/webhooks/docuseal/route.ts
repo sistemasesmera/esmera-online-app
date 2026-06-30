@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     const { error: updateError } = await supabase
       .from("contracts")
-      .update({ status: "firmado", signed_at: signedAt, document_url: docusealUrl } as never)
+      .update({ status: "firmado", signed_at: signedAt, document_url: docusealUrl })
       .eq("id", contract.id);
 
     if (updateError) {
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       enrollment_id: contract.enrollment_id,
       event_type: "signed",
       occurred_at: signedAt,
-    } as never);
+    });
 
     if (contract.enrollment_id) {
       revalidatePath(`/enrollments/${contract.enrollment_id}`);
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
             if (urlData?.signedUrl) {
               await supabase
                 .from("contracts")
-                .update({ document_url: urlData.signedUrl } as never)
+                .update({ document_url: urlData.signedUrl })
                 .eq("id", contract.id);
               console.log(tag, "PDF stored and URL updated");
             }
@@ -156,14 +156,14 @@ export async function POST(req: NextRequest) {
     if (contract) {
       const { error: updateError } = await supabase
         .from("contracts")
-        .update({ status: "borrador", docuseal_submission_id: null, docuseal_signing_url: null, sent_at: null } as never)
+        .update({ status: "borrador", docuseal_submission_id: null, docuseal_signing_url: null, sent_at: null })
         .eq("id", contract.id);
       if (updateError) console.error(tag, "Expired update error:", updateError.message);
       await supabase.from("contract_events").insert({
         contract_id: contract.id,
         enrollment_id: contract.enrollment_id,
         event_type: "expired",
-      } as never);
+      });
       if (contract.enrollment_id) revalidatePath(`/enrollments/${contract.enrollment_id}`);
       console.log(tag, "Submission expired — contract reverted to borrador");
     }
@@ -191,7 +191,7 @@ export async function POST(req: NextRequest) {
           docuseal_submission_id: null,
           docuseal_signing_url: null,
           sent_at: null,
-        } as never)
+        })
         .eq("id", contract.id);
       if (updateError) console.error(tag, "Declined update error:", updateError.message);
       await supabase.from("contract_events").insert({
@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
         event_type: "declined",
         occurred_at: declinedAt,
         decline_reason: declineReason,
-      } as never);
+      });
       if (contract.enrollment_id) revalidatePath(`/enrollments/${contract.enrollment_id}`);
       console.log(tag, "Form declined — contract reverted to borrador with declined_at:", declinedAt);
     }

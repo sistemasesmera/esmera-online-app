@@ -181,7 +181,7 @@ export async function POST(
         docuseal_signing_url: signingUrl,
         sent_at: new Date().toISOString(),
         declined_at: null,
-      } as never)
+      })
       .eq("id", contract.id);
 
     if (updateError) {
@@ -194,7 +194,7 @@ export async function POST(
       enrollment_id: id,
       event_type: "sent",
       email: recipientEmail,
-    } as never);
+    });
 
     revalidatePath(`/enrollments/${id}`);
     revalidatePath("/enrollments");

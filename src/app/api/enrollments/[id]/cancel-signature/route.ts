@@ -48,7 +48,7 @@ export async function POST(
     // Clear docuseal fields from DB regardless of DocuSeal response
     await admin
       .from("contracts")
-      .update({ docuseal_submission_id: null, docuseal_signing_url: null, sent_at: null, status: "borrador" } as never)
+      .update({ docuseal_submission_id: null, docuseal_signing_url: null, sent_at: null, status: "borrador" })
       .eq("id", contract.id);
   }
 
