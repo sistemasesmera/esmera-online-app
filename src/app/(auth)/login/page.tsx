@@ -187,7 +187,7 @@ export default function LoginPage() {
           </form>
 
           <p className="text-center text-xs text-muted-foreground/50 mt-10">
-            © 2025 Esmera School · Todos los derechos reservados
+            © 2026 Esmera School · Todos los derechos reservados
           </p>
         </div>
       </div>

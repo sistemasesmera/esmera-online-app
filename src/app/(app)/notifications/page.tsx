@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Notificaciones" };
+
 import { NotificationsClient } from "@/components/features/notifications/notifications-client";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { getMyNotifications } from "@/lib/data/notifications.repository";

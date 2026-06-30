@@ -270,6 +270,7 @@ export function EnrollmentFichaClient({
   const [isSendingForSignature, setIsSendingForSignature] = useState(false);
   const [sendSignatureOpen, setSendSignatureOpen] = useState(false);
   const [signatureEmail, setSignatureEmail] = useState("");
+  const [freshSigningUrl, setFreshSigningUrl] = useState<string | null>(null);
   const [certPendingFile, setCertPendingFile] = useState<File | null>(null);
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
@@ -337,6 +338,7 @@ export function EnrollmentFichaClient({
       if (!res.ok) toast.error(json.error ?? "Error al enviar para firma");
       else {
         toast.success(`Contrato enviado a ${signatureEmail.trim()} para firma`);
+        if (json.signingUrl) setFreshSigningUrl(json.signingUrl);
         router.refresh();
       }
     } catch {
@@ -651,7 +653,7 @@ export function EnrollmentFichaClient({
                     </div>
                   )}
 
-                  {canSign && contract.status === "borrador" && (
+                  {canSign && contract.status === "borrador" && !freshSigningUrl && (
                     <Button
                       size="sm"
                       disabled={isSendingForSignature}
@@ -662,13 +664,13 @@ export function EnrollmentFichaClient({
                       {isSendingForSignature ? "Enviando…" : "Enviar para firma"}
                     </Button>
                   )}
-                  {canSign && contract.status === "enviado" && contract.docuseal_signing_url && (
+                  {canSign && (contract.status === "enviado" || freshSigningUrl) && (contract.docuseal_signing_url || freshSigningUrl) && (
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => {
-                        navigator.clipboard.writeText(contract.docuseal_signing_url!);
-                        toast.success("Enlace copiado");
+                        navigator.clipboard.writeText(freshSigningUrl ?? contract.docuseal_signing_url!);
+                        toast.success("Enlace de firma copiado");
                       }}
                     >
                       <Copy className="h-3.5 w-3.5" />

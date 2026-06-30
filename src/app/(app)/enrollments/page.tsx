@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Matrículas" };
+
 import { EnrollmentsClient } from "@/components/features/enrollments/enrollments-client";
 import { requireRole } from "@/lib/auth/require-role";
 import { listCourses } from "@/lib/data/courses.repository";

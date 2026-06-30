@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Leads" };
+
 import { LeadsClient } from "@/components/features/crm/leads/leads-client";
 import { requireRole } from "@/lib/auth/require-role";
 import { listLeads } from "@/lib/data/leads.repository";

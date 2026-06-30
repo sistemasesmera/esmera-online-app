@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   Award,
   Banknote,
@@ -37,6 +38,8 @@ import { ENROLLMENT_STATUS_LABELS } from "@/lib/domain/enrollments/schema";
 import { CONTACT_TYPE_LABELS } from "@/lib/domain/followups/schema";
 import { LEAD_STATUS_LABELS } from "@/lib/domain/leads/schema";
 import { ROLE_LABELS } from "@/lib/domain/shared/permissions";
+
+export const metadata: Metadata = { title: "Dashboard" };
 
 // ─── Color maps ──────────────────────────────────────────────────────────────
 

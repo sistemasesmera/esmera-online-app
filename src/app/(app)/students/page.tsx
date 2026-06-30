@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Alumnos" };
+
 import { StudentsClient } from "@/components/features/students/students-client";
 import { listStudents } from "@/lib/data/students.repository";
 import { requireRole } from "@/lib/auth/require-role";

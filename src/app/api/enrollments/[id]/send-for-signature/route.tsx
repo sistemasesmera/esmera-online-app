@@ -5,6 +5,7 @@ import { Font, renderToBuffer } from "@react-pdf/renderer";
 import { NextRequest } from "next/server";
 import { revalidatePath } from "next/cache";
 
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { EnrollmentContractPDF, type EnrollmentContractData } from "@/lib/pdf/enrollment-contract";
 
@@ -171,7 +172,8 @@ export async function POST(
     const submissionId = String(docusealData.id);
     const signingUrl: string | null = docusealData.submitters?.[0]?.embed_src ?? null;
 
-    await supabase
+    const adminClient = createAdminClient();
+    const { error: updateError } = await adminClient
       .from("contracts")
       .update({
         status: "enviado",
@@ -181,10 +183,15 @@ export async function POST(
       } as never)
       .eq("id", contract.id);
 
+    if (updateError) {
+      console.error("[send-for-signature] Error actualizando contrato:", updateError);
+      return Response.json({ error: "Error al actualizar el estado del contrato" }, { status: 500 });
+    }
+
     revalidatePath(`/enrollments/${id}`);
     revalidatePath("/enrollments");
 
-    return Response.json({ success: true });
+    return Response.json({ success: true, signingUrl });
   } catch (err) {
     console.error("[send-for-signature] Error:", err);
     return Response.json({ error: "Error interno del servidor" }, { status: 500 });

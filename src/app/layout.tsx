@@ -18,8 +18,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Esmera Online Manager",
+  title: {
+    template: "%s · Esmera",
+    default: "Esmera Online Manager",
+  },
   description: "Gestión comercial, administrativa y de seguimiento del alumnado de Esmera Online",
+  applicationName: "Esmera Online Manager",
+  authors: [{ name: "Esmera School" }],
+  keywords: ["gestión académica", "formación online", "CRM educativo", "Esmera"],
+  metadataBase: new URL("https://app.esmeraschool.com"),
+  openGraph: {
+    type: "website",
+    siteName: "Esmera Online Manager",
+    title: "Esmera Online Manager",
+    description: "Plataforma de gestión académica y comercial de Esmera School",
+    locale: "es_ES",
+  },
 };
 
 export default function RootLayout({

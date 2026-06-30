@@ -1,3 +1,6 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Cursos" };
+
 import { CoursesClient } from "@/components/features/courses/courses-client";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { listCourses } from "@/lib/data/courses.repository";
