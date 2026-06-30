@@ -268,7 +268,7 @@ export function StudentDetailClient({
                 <div key={enrollment.id} className="rounded-lg border">
                   <div className="flex items-center justify-between px-4 py-2.5 border-b bg-muted/30">
                     <span className="text-xs font-semibold text-foreground">
-                      {enrollment.courses?.name ?? "Matrícula"}
+                      #{enrollment.enrollment_number} — {enrollment.courses?.name ?? "Matrícula"}
                     </span>
                     <a
                       href={`/enrollments/${enrollment.id}`}
