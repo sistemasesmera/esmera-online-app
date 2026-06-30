@@ -149,11 +149,35 @@ export async function POST(req: NextRequest) {
     if (contract) {
       const { error: updateError } = await supabase
         .from("contracts")
-        .update({ status: "borrador", docuseal_submission_id: null, sent_at: null } as never)
+        .update({ status: "borrador", docuseal_submission_id: null, docuseal_signing_url: null, sent_at: null } as never)
         .eq("id", contract.id);
       if (updateError) console.error(tag, "Expired update error:", updateError.message);
       if (contract.enrollment_id) revalidatePath(`/enrollments/${contract.enrollment_id}`);
       console.log(tag, "Submission expired — contract reverted to borrador");
+    }
+  }
+
+  if (event_type === "form.declined") {
+    const { data: contract } = await supabase
+      .from("contracts")
+      .select("id, enrollment_id")
+      .filter("docuseal_submission_id", "eq", submissionId)
+      .single();
+
+    if (contract) {
+      const { error: updateError } = await supabase
+        .from("contracts")
+        .update({
+          status: "borrador",
+          declined_at: new Date().toISOString(),
+          docuseal_submission_id: null,
+          docuseal_signing_url: null,
+          sent_at: null,
+        } as never)
+        .eq("id", contract.id);
+      if (updateError) console.error(tag, "Declined update error:", updateError.message);
+      if (contract.enrollment_id) revalidatePath(`/enrollments/${contract.enrollment_id}`);
+      console.log(tag, "Form declined — contract reverted to borrador with declined_at");
     }
   }
 

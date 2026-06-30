@@ -180,6 +180,7 @@ export async function POST(
         docuseal_submission_id: submissionId,
         docuseal_signing_url: signingUrl,
         sent_at: new Date().toISOString(),
+        declined_at: null,
       } as never)
       .eq("id", contract.id);
 

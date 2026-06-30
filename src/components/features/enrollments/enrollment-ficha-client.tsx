@@ -559,6 +559,25 @@ export function EnrollmentFichaClient({
                       )}
                     </div>
                   )}
+                  {/* Rechazado por el alumno */}
+                  {contract.declined_at && contract.status === "borrador" && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 flex flex-col gap-1.5">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-red-600">
+                        Contrato rechazado
+                      </p>
+                      <div className="flex items-start gap-2">
+                        <div>
+                          <p className="text-xs font-medium text-red-700 leading-5">El alumno rechazó el contrato</p>
+                          <p className="text-[10px] text-red-500 leading-4">
+                            {new Date(contract.declined_at).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+                            {" · "}
+                            {new Date(contract.declined_at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Contrato firmado manualmente (subido) */}
                   {contract.status === "firmado" && !contract.docuseal_submission_id && (
                     <div className="rounded-lg border bg-muted/30 px-3 py-2.5 flex flex-col gap-1.5">
@@ -661,7 +680,7 @@ export function EnrollmentFichaClient({
                       className="bg-indigo-600 hover:bg-indigo-700 text-white"
                     >
                       <Send className="h-3.5 w-3.5" />
-                      {isSendingForSignature ? "Enviando…" : "Enviar para firma"}
+                      {isSendingForSignature ? "Enviando…" : contract.declined_at ? "Volver a enviar" : "Enviar para firma"}
                     </Button>
                   )}
                   {canSign && (contract.status === "enviado" || freshSigningUrl) && (contract.docuseal_signing_url || freshSigningUrl) && (
