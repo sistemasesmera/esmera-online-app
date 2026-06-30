@@ -51,7 +51,6 @@ export async function POST(
       if (body?.email && typeof body.email === "string") overrideEmail = body.email.trim();
       if (body?.expiry && typeof body.expiry === "string") {
         const expiryMap: Record<string, number> = {
-          "1m":  1 * 60 * 1000,
           "5d":  5 * 24 * 60 * 60 * 1000,
           "10d": 10 * 24 * 60 * 60 * 1000,
           "15d": 15 * 24 * 60 * 60 * 1000,

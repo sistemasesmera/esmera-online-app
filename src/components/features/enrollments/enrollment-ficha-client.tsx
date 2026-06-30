@@ -911,7 +911,7 @@ export function EnrollmentFichaClient({
                 )}
               </TabsTrigger>
               <TabsTrigger value="adjuntos">
-                Adjuntos
+                Adjuntos de la matrícula
                 {attachments.length > 0 && (
                   <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                     {attachments.length}
@@ -1115,7 +1115,6 @@ export function EnrollmentFichaClient({
               <Label>Tiempo para firmar</Label>
               <div className="grid grid-cols-4 gap-1.5">
                 {[
-                  { value: "1m", label: "1 min" },
                   { value: "5d", label: "5 días" },
                   { value: "10d", label: "10 días" },
                   { value: "15d", label: "15 días" },
