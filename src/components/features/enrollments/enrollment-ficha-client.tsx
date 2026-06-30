@@ -893,12 +893,37 @@ export function EnrollmentFichaClient({
             </CardContent>
           </Card>
 
+          {/* Adjuntos de la matrícula */}
+          <Card className="border card-shadow">
+            <CardHeader className="pb-3 border-b">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Paperclip className="h-4 w-4 text-muted-foreground" />
+                Adjuntos de la matrícula
+                {attachments.length > 0 && (
+                  <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                    {attachments.length}
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <EnrollmentAttachmentsTab
+                enrollmentId={enrollment.id}
+                studentId={enrollment.student_id}
+                attachments={attachments}
+                canUpload={canEdit || canSign}
+                canDelete={canEdit || canSign}
+                currentUserName={currentUserName}
+              />
+            </CardContent>
+          </Card>
+
           {/* Resumen económico */}
           {contract && (
             <EconomicSummaryCard contract={contract} />
           )}
 
-          {/* Tabs: Tutorías / Adjuntos / Actividad */}
+          {/* Tabs: Tutorías / Actividad */}
           <Tabs defaultValue="tutorias">
             <TabsList>
               <TabsTrigger value="tutorias" className="flex items-center gap-1.5">
@@ -907,14 +932,6 @@ export function EnrollmentFichaClient({
                 {isActiva && followups.length > 0 && (
                   <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
                     {followups.length}
-                  </span>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="adjuntos">
-                Adjuntos de la matrícula
-                {attachments.length > 0 && (
-                  <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                    {attachments.length}
                   </span>
                 )}
               </TabsTrigger>
@@ -983,17 +1000,6 @@ export function EnrollmentFichaClient({
                   )}
                 </div>
               )}
-            </TabsContent>
-
-            <TabsContent value="adjuntos" className="mt-4">
-              <EnrollmentAttachmentsTab
-                enrollmentId={enrollment.id}
-                studentId={enrollment.student_id}
-                attachments={attachments}
-                canUpload={canEdit || canSign}
-                canDelete={canEdit || canSign}
-                currentUserName={currentUserName}
-              />
             </TabsContent>
 
             <TabsContent value="actividad" className="mt-4">
