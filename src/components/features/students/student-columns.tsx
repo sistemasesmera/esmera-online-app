@@ -5,12 +5,6 @@ import { ArrowRight, Hash, User } from "lucide-react";
 import Link from "next/link";
 
 import type { StudentWithComercial } from "@/lib/data/students.repository";
-import { STUDENT_STATUS_LABELS } from "@/lib/domain/students/schema";
-
-const STATUS_CLS: Record<string, string> = {
-  en_formacion:      "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  expediente_cerrado: "bg-slate-100 text-slate-600 ring-slate-200",
-};
 
 export function getStudentColumns(): ColumnDef<StudentWithComercial>[] {
   return [
@@ -58,15 +52,6 @@ export function getStudentColumns(): ColumnDef<StudentWithComercial>[] {
           <span className="text-xs text-muted-foreground italic">Sin asignar</span>
         );
       },
-    },
-    {
-      accessorKey: "status",
-      header: "Estado",
-      cell: ({ row }) => (
-        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1 ${STATUS_CLS[row.original.status] ?? "bg-muted text-muted-foreground ring-border"}`}>
-          {STUDENT_STATUS_LABELS[row.original.status] ?? row.original.status}
-        </span>
-      ),
     },
     {
       accessorKey: "created_at",
