@@ -158,18 +158,23 @@ export async function POST(req: NextRequest) {
   }
 
   if (event_type === "form.declined") {
+    // data is the submitter object — submission id is nested at data.submission.id
+    const declinedSubmissionId = String(
+      (data as { submission?: { id: number } }).submission?.id ?? submissionId
+    );
     const { data: contract } = await supabase
       .from("contracts")
       .select("id, enrollment_id")
-      .filter("docuseal_submission_id", "eq", submissionId)
+      .filter("docuseal_submission_id", "eq", declinedSubmissionId)
       .single();
 
     if (contract) {
+      const declinedAt = (data as { declined_at?: string }).declined_at ?? new Date().toISOString();
       const { error: updateError } = await supabase
         .from("contracts")
         .update({
           status: "borrador",
-          declined_at: new Date().toISOString(),
+          declined_at: declinedAt,
           docuseal_submission_id: null,
           docuseal_signing_url: null,
           sent_at: null,
@@ -177,7 +182,7 @@ export async function POST(req: NextRequest) {
         .eq("id", contract.id);
       if (updateError) console.error(tag, "Declined update error:", updateError.message);
       if (contract.enrollment_id) revalidatePath(`/enrollments/${contract.enrollment_id}`);
-      console.log(tag, "Form declined — contract reverted to borrador with declined_at");
+      console.log(tag, "Form declined — contract reverted to borrador with declined_at:", declinedAt);
     }
   }
 
