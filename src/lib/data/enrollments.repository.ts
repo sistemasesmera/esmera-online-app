@@ -92,13 +92,26 @@ export async function getEnrollmentById(id: string): Promise<EnrollmentFicha | n
   return data ? (data as unknown as EnrollmentFicha) : null;
 }
 
-export async function listEnrollments(): Promise<EnrollmentWithStudent[]> {
+type ListEnrollmentsFilter =
+  | { createdBy: string }
+  | { tutorId: string }
+  | undefined;
+
+export async function listEnrollments(filter?: ListEnrollmentsFilter): Promise<EnrollmentWithStudent[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("enrollments")
     .select(`${ENROLLMENT_SELECT}, students!student_id(id, full_name, dni_nie)`)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
+
+  if (filter && "createdBy" in filter) {
+    query = query.eq("created_by", filter.createdBy);
+  } else if (filter && "tutorId" in filter) {
+    query = query.eq("tutor_id", filter.tutorId);
+  }
+
+  const { data, error } = await query;
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as EnrollmentWithStudent[];
 }
