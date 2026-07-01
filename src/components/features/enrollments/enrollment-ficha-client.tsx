@@ -17,8 +17,10 @@ import {
   Layers,
   Lock,
   Paperclip,
+  Pencil,
   Plus,
   Send,
+  Trash2,
   Upload,
   User,
   XCircle,
@@ -32,10 +34,9 @@ import { toast } from "sonner";
 import {
   activateEnrollment,
   assignTutor,
-
-
   updateEnrollmentStatus,
 } from "@/app/(app)/enrollments/actions";
+import { deleteFollowup } from "@/app/(app)/tutoring/actions";
 import { attachCertificateDocument, createCertificate } from "@/app/(app)/certificates/actions";
 import { FollowupForm } from "@/components/features/tutoring/followup-form";
 import { Badge } from "@/components/ui/badge";
@@ -270,6 +271,8 @@ export function EnrollmentFichaClient({
   const [activateOpen, setActivateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [followupOpen, setFollowupOpen] = useState(false);
+  const [editingFollowup, setEditingFollowup] = useState<FollowupForStudent | null>(null);
+  const [deletingFollowupId, setDeletingFollowupId] = useState<string | null>(null);
   const [certDocOpen, setCertDocOpen] = useState(false);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [isSendingForSignature, setIsSendingForSignature] = useState(false);
@@ -969,29 +972,52 @@ export function EnrollmentFichaClient({
                     <div className="flex flex-col gap-3">
                       {followups.map((f) => (
                         <div key={f.id} className="rounded-lg border bg-card p-4 text-sm">
-                          <div className="flex items-center gap-2 flex-wrap mb-3">
-                            <span className="font-semibold text-foreground">
-                              {new Date(f.followup_date).toLocaleDateString("es-ES", {
-                                day: "2-digit",
-                                month: "long",
-                                year: "numeric",
-                              })}
-                            </span>
-                            <Badge variant="outline" className="text-xs font-medium">
-                              {CONTACT_TYPE_LABELS[f.contact_type]}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {f.tutors?.users?.full_name ?? "—"}
-                            </span>
-                            <span className="text-xs text-muted-foreground ml-auto">
-                              Registrado{" "}
-                              {new Date(f.created_at).toLocaleString("es-ES", {
-                                day: "2-digit",
-                                month: "short",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
+                          <div className="flex items-start justify-between gap-2 mb-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-foreground">
+                                {new Date(f.followup_date).toLocaleDateString("es-ES", {
+                                  day: "2-digit",
+                                  month: "long",
+                                  year: "numeric",
+                                })}
+                              </span>
+                              <Badge variant="outline" className="text-xs font-medium">
+                                {CONTACT_TYPE_LABELS[f.contact_type]}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {f.tutors?.users?.full_name ?? "—"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-xs text-muted-foreground hidden sm:inline">
+                                {new Date(f.created_at).toLocaleString("es-ES", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                              {canFollowup && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingFollowup(f)}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                                    title="Editar tutoría"
+                                  >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setDeletingFollowupId(f.id)}
+                                    className="text-muted-foreground hover:text-destructive transition-colors p-0.5"
+                                    title="Eliminar tutoría"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           </div>
                           <p className="text-muted-foreground whitespace-pre-wrap">{f.notes}</p>
                         </div>
@@ -1210,7 +1236,7 @@ export function EnrollmentFichaClient({
         </DialogContent>
       </Dialog>
 
-      {/* Followup */}
+      {/* Followup — crear */}
       {canFollowup && (
         <Dialog open={followupOpen} onOpenChange={setFollowupOpen}>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -1223,6 +1249,58 @@ export function EnrollmentFichaClient({
               presetEnrollmentId={enrollment.id}
               onSuccess={() => setFollowupOpen(false)}
             />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Followup — editar */}
+      {canFollowup && (
+        <Dialog open={!!editingFollowup} onOpenChange={(open) => !open && setEditingFollowup(null)}>
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar tutoría</DialogTitle>
+            </DialogHeader>
+            {editingFollowup && (
+              <FollowupForm
+                key={editingFollowup.id}
+                enrollments={enrollmentForFollowup}
+                presetEnrollmentId={enrollment.id}
+                followup={editingFollowup}
+                onSuccess={() => setEditingFollowup(null)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Followup — confirmar eliminación */}
+      {canFollowup && (
+        <Dialog open={!!deletingFollowupId} onOpenChange={(open) => !open && setDeletingFollowupId(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Eliminar tutoría</DialogTitle>
+              <p className="text-sm text-muted-foreground">Esta acción no se puede deshacer.</p>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeletingFollowupId(null)} disabled={isPending}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                disabled={isPending}
+                onClick={() => {
+                  if (!deletingFollowupId) return;
+                  const id = deletingFollowupId;
+                  startTransition(async () => {
+                    const result = await deleteFollowup(id);
+                    if (result.error) toast.error(result.error);
+                    else { toast.success("Tutoría eliminada"); setDeletingFollowupId(null); }
+                  });
+                }}
+              >
+                {isPending ? "Eliminando…" : "Eliminar"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       )}

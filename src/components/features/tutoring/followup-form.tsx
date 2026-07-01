@@ -6,7 +6,7 @@ import { useState, useTransition } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
-import { createFollowup } from "@/app/(app)/tutoring/actions";
+import { createFollowup, updateFollowup } from "@/app/(app)/tutoring/actions";
 import { ComboboxField } from "@/components/shared/form-fields/combobox-field";
 import { DatePickerField } from "@/components/shared/form-fields/date-picker-field";
 import { Button } from "@/components/ui/button";
@@ -30,23 +30,27 @@ const CONTACT_ICON: Record<ContactType, React.ElementType> = {
   otro: Phone,
 };
 
+type FollowupData = { id: string; contact_type: ContactType; notes: string; followup_date: string };
+
 type Props = {
   enrollments: EnrollmentForFollowup[];
   presetEnrollmentId?: string;
   onSuccess: () => void;
+  followup?: FollowupData;
 };
 
-export function FollowupForm({ enrollments, presetEnrollmentId, onSuccess }: Props) {
+export function FollowupForm({ enrollments, presetEnrollmentId, onSuccess, followup }: Props) {
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
+  const isEdit = !!followup;
 
   const form = useForm<CreateFollowupInput>({
     resolver: zodResolver(createFollowupSchema),
     defaultValues: {
       enrollment_id: presetEnrollmentId ?? "",
-      contact_type: "llamada",
-      notes: "",
-      followup_date: new Date().toISOString().slice(0, 10),
+      contact_type: followup?.contact_type ?? "llamada",
+      notes: followup?.notes ?? "",
+      followup_date: followup?.followup_date?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
     },
   });
 
@@ -60,9 +64,11 @@ export function FollowupForm({ enrollments, presetEnrollmentId, onSuccess }: Pro
       onSubmit={form.handleSubmit((data) => {
         setServerError(null);
         startTransition(async () => {
-          const result = await createFollowup(data);
+          const result = isEdit
+            ? await updateFollowup(followup!.id, { contact_type: data.contact_type, notes: data.notes, followup_date: data.followup_date })
+            : await createFollowup(data);
           if (result.error) setServerError(result.error);
-          else { toast.success("Tutoría registrada"); onSuccess(); }
+          else { toast.success(isEdit ? "Tutoría actualizada" : "Tutoría registrada"); onSuccess(); }
         });
       })}
       className="flex flex-col gap-5"
@@ -147,7 +153,7 @@ export function FollowupForm({ enrollments, presetEnrollmentId, onSuccess }: Pro
           Cancelar
         </Button>
         <Button type="submit" disabled={isPending}>
-          {isPending ? "Registrando…" : "Registrar tutoría"}
+          {isPending ? (isEdit ? "Guardando…" : "Registrando…") : (isEdit ? "Guardar cambios" : "Registrar tutoría")}
         </Button>
       </div>
     </form>

@@ -33,4 +33,11 @@ export const createFollowupSchema = z.object({
   followup_date: z.string().min(1, "La fecha es requerida"),
 });
 
+export const updateFollowupSchema = z.object({
+  contact_type: z.enum(CONTACT_TYPES as [ContactType, ...ContactType[]]),
+  notes: z.string().min(1, "Las notas son requeridas"),
+  followup_date: z.string().min(1, "La fecha es requerida"),
+});
+
 export type CreateFollowupInput = z.infer<typeof createFollowupSchema>;
+export type UpdateFollowupInput = z.infer<typeof updateFollowupSchema>;
