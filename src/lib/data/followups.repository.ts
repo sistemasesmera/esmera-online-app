@@ -98,7 +98,7 @@ export async function getFollowupsByEnrollments(enrollmentIds: string[]): Promis
       tutors!tutor_id(users!user_id(full_name))
     `)
     .in("enrollment_id", enrollmentIds)
-    .order("followup_date", { ascending: false });
+    .order("followup_date", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []) as unknown as FollowupForStudent[];
 }

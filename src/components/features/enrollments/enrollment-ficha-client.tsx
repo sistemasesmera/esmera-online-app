@@ -1266,7 +1266,7 @@ export function EnrollmentFichaClient({
                 enrollments={enrollmentForFollowup}
                 presetEnrollmentId={enrollment.id}
                 followup={editingFollowup}
-                onSuccess={() => setEditingFollowup(null)}
+                onSuccess={() => { setEditingFollowup(null); router.refresh(); }}
               />
             )}
           </DialogContent>
@@ -1294,7 +1294,7 @@ export function EnrollmentFichaClient({
                   startTransition(async () => {
                     const result = await deleteFollowup(id);
                     if (result.error) toast.error(result.error);
-                    else { toast.success("Tutoría eliminada"); setDeletingFollowupId(null); }
+                    else { toast.success("Tutoría eliminada"); setDeletingFollowupId(null); router.refresh(); }
                   });
                 }}
               >
