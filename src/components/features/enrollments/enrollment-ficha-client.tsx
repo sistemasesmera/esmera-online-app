@@ -985,7 +985,7 @@ export function EnrollmentFichaClient({
                                 {CONTACT_TYPE_LABELS[f.contact_type]}
                               </Badge>
                               <span className="text-xs text-muted-foreground">
-                                {f.tutors?.users?.full_name ?? "—"}
+                                {f.creator?.full_name ?? "—"}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">

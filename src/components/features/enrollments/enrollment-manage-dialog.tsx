@@ -254,7 +254,7 @@ export function EnrollmentManageDialog({
                         {FOLLOWUP_STATUS_LABELS[f.student_status_snapshot]}
                       </Badge>
                       <span className="text-xs text-muted-foreground ml-auto">
-                        {f.tutors?.users?.full_name ?? "—"}
+                        {f.creator?.full_name ?? "—"}
                       </span>
                     </div>
                     <p className="text-muted-foreground whitespace-pre-wrap">{f.notes}</p>

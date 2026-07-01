@@ -461,7 +461,8 @@ export type Database = {
         Row: {
           id: string;
           enrollment_id: string;
-          tutor_id: string;
+          tutor_id: string | null;
+          created_by: string | null;
           contact_type: ContactType;
           student_status_snapshot: FollowupStudentStatus;
           notes: string;
@@ -470,7 +471,8 @@ export type Database = {
         };
         Insert: {
           enrollment_id: string;
-          tutor_id: string;
+          tutor_id?: string | null;
+          created_by?: string | null;
           contact_type: ContactType;
           student_status_snapshot: FollowupStudentStatus;
           notes: string;
@@ -524,7 +526,7 @@ export type Database = {
     Functions: Record<string, never>;
     Enums: {
       app_role: AppRole;
-      student_status: StudentStatus; // simplified to en_formacion | expediente_cerrado
+      student_status: StudentStatus;
       enrollment_status: EnrollmentStatus;
       lead_status: LeadStatus;
       lead_source: LeadSource;

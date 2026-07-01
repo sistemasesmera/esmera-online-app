@@ -84,7 +84,7 @@ export type FollowupForStudent = {
   followup_date: string;
   created_at: string;
   enrollments: { courses: { name: string } | null } | null;
-  tutors: { users: { full_name: string } | null } | null;
+  creator: { full_name: string } | null;
 };
 
 export async function getFollowupsByEnrollments(enrollmentIds: string[]): Promise<FollowupForStudent[]> {
@@ -95,7 +95,7 @@ export async function getFollowupsByEnrollments(enrollmentIds: string[]): Promis
     .select(`
       id, enrollment_id, contact_type, student_status_snapshot, notes, followup_date, created_at,
       enrollments!enrollment_id(courses!course_id(name)),
-      tutors!tutor_id(users!user_id(full_name))
+      creator:users!created_by(full_name)
     `)
     .in("enrollment_id", enrollmentIds)
     .order("created_at", { ascending: false });

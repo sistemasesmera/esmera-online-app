@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Montserrat, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-import { ThemeProvider } from "@/components/layout/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
@@ -44,14 +43,11 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${montserrat.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning
+      className={`light ${montserrat.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
-          <TooltipProvider>{children}</TooltipProvider>
-          <Toaster />
-        </ThemeProvider>
+        <TooltipProvider>{children}</TooltipProvider>
+        <Toaster />
       </body>
     </html>
   );
