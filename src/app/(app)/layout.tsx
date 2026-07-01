@@ -17,7 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppSidebar role={user.role} user={user} />
       <SidebarInset>
         <AppTopbar user={user} />
-        <main className="flex-1 p-6 min-h-0">{children}</main>
+        <main className="flex-1 p-3 sm:p-6 min-h-0">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

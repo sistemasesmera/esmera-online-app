@@ -127,7 +127,7 @@ export function LeadFichaClient({
   return (
     <>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-black tracking-tight">{lead.full_name}</h1>
           <div className="flex items-center gap-2 mt-2 flex-wrap">

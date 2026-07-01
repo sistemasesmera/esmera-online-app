@@ -456,7 +456,7 @@ export function EnrollmentFichaClient({
   return (
     <>
       {/* ── Header ── */}
-      <div className="flex items-start justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-black tracking-tight">
             {student?.full_name ?? "—"}
@@ -871,7 +871,7 @@ export function EnrollmentFichaClient({
               <CardTitle className="text-sm font-semibold">Datos de la matrícula</CardTitle>
             </CardHeader>
             <CardContent className="pt-3">
-              <div className="grid grid-cols-2 gap-x-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
                 <dl>
                   <DetailRow label="Fecha de matrícula" value={fmtDate(enrollment.enrollment_date)} />
                   <DetailRow label="Fecha de inicio" value={fmtDate(enrollment.start_date)} />
