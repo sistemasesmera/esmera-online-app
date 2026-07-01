@@ -33,6 +33,7 @@ export function UserForm({ user, onSuccess }: { user?: UserRow; onSuccess: () =>
       role: user?.role ?? "comercial",
       phone: user?.phone ?? "",
       is_active: user?.is_active ?? true,
+      password: "",
     },
   });
 
@@ -82,6 +83,12 @@ export function UserForm({ user, onSuccess }: { user?: UserRow; onSuccess: () =>
           error={editForm.formState.errors.phone}
         />
         <SwitchField label="Cuenta activa" name="is_active" control={editForm.control} />
+        <TextField
+          label="Nueva contraseña (dejar vacío para no cambiar)"
+          type="password"
+          registration={editForm.register("password")}
+          error={editForm.formState.errors.password}
+        />
         {serverError && <p className="text-sm text-destructive">{serverError}</p>}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="outline" onClick={onSuccess} disabled={isPending}>

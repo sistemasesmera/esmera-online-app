@@ -76,10 +76,18 @@ export async function updateUser(id: string, input: UpdateUserInput): Promise<Ac
     return { error: parsed.error.issues[0].message, success: false };
   }
 
+  const { password, ...profileData } = parsed.data;
+
+  if (password) {
+    const admin = createAdminClient();
+    const { error: authError } = await admin.auth.admin.updateUserById(id, { password });
+    if (authError) return { error: authError.message, success: false };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("users")
-    .update({ ...parsed.data, phone: parsed.data.phone || null })
+    .update({ ...profileData, phone: profileData.phone || null })
     .eq("id", id);
 
   if (error) return { error: error.message, success: false };

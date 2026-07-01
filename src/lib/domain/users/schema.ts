@@ -15,6 +15,7 @@ export const updateUserSchema = z.object({
   role: z.enum(APP_ROLES),
   phone: z.string().optional(),
   is_active: z.boolean(),
+  password: z.string().min(8, "Mínimo 8 caracteres").optional().or(z.literal("")),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
