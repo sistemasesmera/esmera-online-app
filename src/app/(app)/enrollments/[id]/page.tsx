@@ -74,7 +74,7 @@ export default async function EnrollmentFichaPage({
 
   const canEdit = roleHasCapability(user.role, "manageEnrollments");
   const canSign = roleHasCapability(user.role, "signContracts");
-  const canFollowup = roleHasCapability(user.role, "manageFollowups");
+  const canFollowup = roleHasCapability(user.role, "recordFollowup");
 
   return (
     <div className="max-w-[1100px]">

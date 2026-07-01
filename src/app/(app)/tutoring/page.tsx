@@ -11,7 +11,7 @@ import { CAPABILITIES, roleHasCapability } from "@/lib/domain/shared/permissions
 
 export default async function TutoringPage() {
   const user = await requireRole(CAPABILITIES.manageFollowups);
-  const isAdmin = user.role === "tech";
+  const isAdmin = roleHasCapability(user.role, "viewAllEnrollments");
 
   let activeEnrollments;
   let followups;
@@ -39,7 +39,7 @@ export default async function TutoringPage() {
     ]);
   }
 
-  const canAdd = roleHasCapability(user.role, "manageFollowups");
+  const canAdd = roleHasCapability(user.role, "recordFollowup");
 
   return (
     <div>

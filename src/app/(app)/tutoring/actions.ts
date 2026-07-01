@@ -13,7 +13,7 @@ type ActionResult = { error: string | null; success: boolean };
 export async function createFollowup(input: CreateFollowupInput): Promise<ActionResult> {
   let currentUser;
   try {
-    currentUser = await requireRole(CAPABILITIES.manageFollowups);
+    currentUser = await requireRole(CAPABILITIES.recordFollowup);
   } catch {
     return { error: "No autorizado", success: false };
   }

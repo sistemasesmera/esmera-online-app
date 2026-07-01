@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Bell,
+  BookMarked,
   BookOpen,
   ClipboardList,
   Code2,
@@ -59,12 +60,17 @@ export const NAV_SECTIONS: NavSection[] = [
         roles: ["tech", "administracion", "jefe_comercial", "comercial", "tutor"],
       },
       {
+        label: "Tutorías",
+        href: "/tutoring",
+        icon: BookMarked,
+        roles: ["tech", "administracion", "jefe_comercial", "tutor"],
+      },
+      {
         label: "Cursos",
         href: "/courses",
         icon: BookOpen,
         roles: ["tech", "administracion"],
       },
-
     ],
   },
   {

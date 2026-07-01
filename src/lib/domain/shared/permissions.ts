@@ -52,8 +52,9 @@ export const CAPABILITIES = {
   // Oportunidades
   manageOpportunities: ["tech", "jefe_comercial", "comercial"],
 
-  // Tutoría
-  manageFollowups: ["tech", "tutor"],
+  // Tutoría — registrar: cualquiera con acceso a la matrícula; gestionar (página propia): tutores y admins
+  recordFollowup: ["tech", "administracion", "jefe_comercial", "comercial", "tutor"],
+  manageFollowups: ["tech", "administracion", "jefe_comercial", "tutor"],
 
   // Certificados
   manageCertificates: ["tech", "administracion"],
