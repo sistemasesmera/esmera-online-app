@@ -27,6 +27,7 @@ export type EnrollmentWithCourse = {
   course_id: string;
   platform_id: string | null;
   tutor_id: string | null;
+  created_by: string;
   status: EnrollmentStatus;
   enrollment_date: string;
   start_date: string | null;
@@ -37,6 +38,7 @@ export type EnrollmentWithCourse = {
   courses: { name: string; code: string | null } | null;
   platforms: { name: string } | null;
   tutors: { users: { full_name: string } | null } | null;
+  creator: { full_name: string } | null;
   contracts: ContractBasic[];
 };
 
@@ -45,11 +47,12 @@ export type EnrollmentWithStudent = EnrollmentWithCourse & {
 };
 
 const ENROLLMENT_SELECT = `
-  id, enrollment_number, student_id, course_id, platform_id, tutor_id, status,
+  id, enrollment_number, student_id, course_id, platform_id, tutor_id, created_by, status,
   enrollment_date, start_date, end_date, duration_months, notes, created_at,
   courses!course_id(name, code),
   platforms!platform_id(name),
   tutors!tutor_id(users!user_id(full_name)),
+  creator:users!created_by(full_name),
   contracts!enrollment_id(id, status, amount, payment_type, cash_method, cash_amount, financer, financed_amount, document_url, signed_at, sent_at, docuseal_submission_id, docuseal_signing_url, declined_at)
 ` as const;
 

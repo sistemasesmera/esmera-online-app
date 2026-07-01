@@ -609,6 +609,11 @@ function KanbanBoard({
   );
 }
 
+function fmtDate(iso: string | null | undefined) {
+  if (!iso) return null;
+  return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+}
+
 function KanbanCard({
   enrollment,
   canEdit,
@@ -622,41 +627,59 @@ function KanbanCard({
 }) {
   const contract = enrollment.contracts?.[0];
   const nextStatuses = ENROLLMENT_STATUS_TRANSITIONS[enrollment.status];
-  const dateStr = new Date(enrollment.created_at).toLocaleString("es-ES", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 
   return (
     <div className="rounded-lg border bg-card p-3 shadow-sm flex flex-col gap-2 text-sm">
-      {/* Alumno */}
-      <div>
-        {enrollment.students ? (
-          <Link
-            href={`/students/${enrollment.students.id}`}
-            className="font-semibold text-foreground hover:text-primary hover:underline leading-tight block"
-          >
-            {enrollment.students.full_name}
-          </Link>
-        ) : (
-          <span className="font-semibold">—</span>
-        )}
-        <span className="text-xs text-muted-foreground mt-0.5 leading-tight block">
-          {enrollment.courses?.name ?? "—"}
+      {/* Header: alumno + nº matrícula */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          {enrollment.students ? (
+            <Link
+              href={`/students/${enrollment.students.id}`}
+              className="font-semibold text-foreground hover:text-primary hover:underline leading-tight block truncate"
+            >
+              {enrollment.students.full_name}
+            </Link>
+          ) : (
+            <span className="font-semibold">—</span>
+          )}
+          <span className="text-xs text-muted-foreground mt-0.5 leading-tight block truncate">
+            {enrollment.courses?.name ?? "—"}
+          </span>
+        </div>
+        <span className="text-[11px] font-mono font-bold text-muted-foreground shrink-0 tabular-nums">
+          #{String(enrollment.enrollment_number).padStart(3, "0")}
         </span>
       </div>
 
-      {/* Meta row */}
-      <div className="flex flex-wrap gap-1.5 items-center">
-        {dateStr && (
-          <span className="text-xs text-muted-foreground tabular-nums">{dateStr}</span>
-        )}
+      {/* Fechas + duración */}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px] border-t pt-1.5">
+        <div className="flex flex-col">
+          <span className="text-muted-foreground/70 uppercase tracking-wide font-medium" style={{ fontSize: "9px" }}>Matrícula</span>
+          <span className="tabular-nums">{fmtDate(enrollment.enrollment_date) ?? "—"}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-muted-foreground/70 uppercase tracking-wide font-medium" style={{ fontSize: "9px" }}>Duración</span>
+          <span>{enrollment.duration_months ? `${enrollment.duration_months} meses` : "—"}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-muted-foreground/70 uppercase tracking-wide font-medium" style={{ fontSize: "9px" }}>Inicio</span>
+          <span className="tabular-nums">{fmtDate(enrollment.start_date) ?? "—"}</span>
+        </div>
+        <div className="flex flex-col">
+          <span className="text-muted-foreground/70 uppercase tracking-wide font-medium" style={{ fontSize: "9px" }}>Fin</span>
+          <span className="tabular-nums">{fmtDate(enrollment.end_date) ?? "—"}</span>
+        </div>
+      </div>
+
+      {/* Comercial + contrato */}
+      <div className="flex items-center justify-between gap-2 border-t pt-1.5">
+        <span className="text-[11px] text-muted-foreground truncate">
+          {enrollment.creator?.full_name ?? "—"}
+        </span>
         {contract && (
           <Badge
-            className={`text-[10px] px-1.5 py-0 h-4 font-medium ${CONTRACT_COLORS[contract.status]}`}
+            className={`text-[10px] px-1.5 py-0 h-4 font-medium shrink-0 ${CONTRACT_COLORS[contract.status]}`}
           >
             {contract.status === "firmado" ? (
               <FileCheck2 className="mr-0.5 h-2.5 w-2.5" />
@@ -670,10 +693,12 @@ function KanbanCard({
 
       {/* Plataforma / Tutor */}
       {(enrollment.platforms?.name || enrollment.tutors?.users?.full_name) && (
-        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground border-t pt-1.5">
-          {enrollment.platforms?.name && <span>{enrollment.platforms.name}</span>}
+        <div className="flex flex-col gap-0.5 text-[11px] text-muted-foreground border-t pt-1.5">
+          {enrollment.platforms?.name && (
+            <span><span className="opacity-60">Plataforma: </span>{enrollment.platforms.name}</span>
+          )}
           {enrollment.tutors?.users?.full_name && (
-            <span>{enrollment.tutors.users.full_name}</span>
+            <span><span className="opacity-60">Tutor: </span>{enrollment.tutors.users.full_name}</span>
           )}
         </div>
       )}
