@@ -69,6 +69,12 @@ function buildMonthlySales(
   });
 }
 
+export type PaymentBreakdownRow = {
+  paymentType: string;
+  count: number;
+  total: number;
+};
+
 export type RecentLead = {
   id: string;
   full_name: string;
@@ -108,6 +114,8 @@ export type DashboardStats = {
   leadDistribution: Array<{ status: LeadStatus; count: number }>;
   pendingCertificates: number;
   signedContractsThisMonth: number;
+  revenueThisMonth: number;
+  salesByPaymentType: PaymentBreakdownRow[];
   monthlySales: MonthlySale[];
   salesByUser: SalesByUser[];
   recentLeads: RecentLead[];
@@ -135,6 +143,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     salesByUserRes,
     recentLeadsRes,
     recentEnrollmentsRes,
+    salesByPaymentRes,
   ] = await Promise.all([
     supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "en_formacion"),
     supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "expediente_cerrado"),
@@ -149,6 +158,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     supabase.from("contracts").select("amount, users!created_by(id, full_name), enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
     supabase.from("leads").select("id, full_name, status, created_at").order("created_at", { ascending: false }).limit(5),
     supabase.from("enrollments").select("id, status, enrollment_date, students!student_id(full_name), courses!course_id(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(5),
+    supabase.from("contracts").select("amount, payment_type, enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
   ]);
 
   const enrollmentDistribution = calcEnrollmentDistribution(
@@ -164,6 +174,19 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const salesByUser = groupSalesByUser(validSalesByUserRows as unknown as SaleRow[]);
   const monthlySales = buildMonthlySales(validMonthlySalesRows as Array<{ amount: number; signed_at: string | null }>, now);
 
+  const validPaymentRows = ((salesByPaymentRes.data ?? []) as Array<{ amount: number; payment_type: string | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
+  const byType = validPaymentRows.reduce<Record<string, { count: number; total: number }>>((acc, r) => {
+    const key = r.payment_type ?? "sin_tipo";
+    if (!acc[key]) acc[key] = { count: 0, total: 0 };
+    acc[key].count++;
+    acc[key].total += r.amount;
+    return acc;
+  }, {});
+  const salesByPaymentType: PaymentBreakdownRow[] = Object.entries(byType)
+    .map(([paymentType, v]) => ({ paymentType, ...v }))
+    .sort((a, b) => b.total - a.total);
+  const revenueThisMonth = validPaymentRows.reduce((s, r) => s + r.amount, 0);
+
   return {
     activeStudents: activeStudentsRes.count ?? 0,
     closedExpedients: atRiskStudentsRes.count ?? 0,
@@ -174,6 +197,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     leadDistribution,
     pendingCertificates: pendingCertsRes.count ?? 0,
     signedContractsThisMonth: signedContractsRes.count ?? 0,
+    revenueThisMonth,
+    salesByPaymentType,
     monthlySales,
     salesByUser,
     recentLeads: (recentLeadsRes.data ?? []) as RecentLead[],
@@ -297,12 +322,6 @@ export async function getComercialDashboardStats(userId: string): Promise<Comerc
 export type PendingCertItem = {
   id: string;
   enrollments: { students: { full_name: string } | null; courses: { name: string } | null } | null;
-};
-
-export type PaymentBreakdownRow = {
-  paymentType: string;
-  count: number;
-  total: number;
 };
 
 export type AdminStats = {

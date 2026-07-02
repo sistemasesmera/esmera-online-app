@@ -658,7 +658,10 @@ async function TechDashboard({ name, monthName }: { name: string; monthName: str
         <SectionLabel>Ventas</SectionLabel>
         <div className="grid lg:grid-cols-2 gap-4 items-start">
           <MonthlySalesTable monthlySales={stats.monthlySales} />
-          <SalesByUserTable salesByUser={stats.salesByUser} monthName={monthName} />
+          <div className="flex flex-col gap-4">
+            <SalesByUserTable salesByUser={stats.salesByUser} monthName={monthName} />
+            <PaymentBreakdownTable rows={stats.salesByPaymentType} monthName={monthName} />
+          </div>
         </div>
       </section>
 
