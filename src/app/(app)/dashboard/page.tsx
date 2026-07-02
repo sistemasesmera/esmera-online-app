@@ -27,6 +27,7 @@ import {
   getAdminDashboardStats,
   getTutorDashboardStats,
   type MonthlySale,
+  type PaymentBreakdownRow,
   type SalesByUser,
   type RecentLead,
   type RecentEnrollment,
@@ -381,6 +382,64 @@ function ActiveEnrollmentsCard({ enrollments }: { enrollments: TutorEnrollmentIt
   );
 }
 
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  contado: "Contado",
+  financiado: "Financiado",
+  mixto: "Mixto",
+  sin_tipo: "Sin tipo",
+};
+
+function PaymentBreakdownTable({ rows, monthName }: { rows: PaymentBreakdownRow[]; monthName: string }) {
+  const grandTotal = rows.reduce((s, r) => s + r.total, 0);
+  return (
+    <Card className="card-shadow border">
+      <CardHeader className="pb-2 border-b">
+        <CardTitle className="text-sm font-semibold">
+          Ventas por forma de pago — <span className="font-normal text-muted-foreground">{monthName}</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0">
+        {rows.length === 0 ? (
+          <div className="flex items-center justify-center py-10">
+            <p className="text-sm text-muted-foreground">Sin ventas este mes.</p>
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-muted/30">
+                <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Forma de pago</th>
+                <th className="text-right px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Contratos</th>
+                <th className="text-right px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Total</th>
+                <th className="text-right px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">%</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.paymentType} className="border-b border-border/50 last:border-0 hover:bg-muted/20 transition-colors">
+                  <td className="px-4 py-2.5 font-medium">{PAYMENT_TYPE_LABELS[row.paymentType] ?? row.paymentType}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{row.count}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{row.total.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
+                    {grandTotal > 0 ? `${Math.round((row.total / grandTotal) * 100)}%` : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="border-t bg-muted/30 font-semibold">
+                <td className="px-4 py-2.5">Total</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{rows.reduce((s, r) => s + r.count, 0)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{grandTotal.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">100%</td>
+              </tr>
+            </tfoot>
+          </table>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Role dashboards ─────────────────────────────────────────────────────────
 
 async function JefeComercialDashboard({ name, monthName }: { name: string; monthName: string }) {
@@ -499,7 +558,15 @@ async function AdminDashboard({ name, monthName }: { name: string; monthName: st
           <KpiCard title="Matrículas activas" value={stats.activeEnrollments} icon={<GraduationCap className="h-5 w-5" />} />
           <KpiCard title="Pendiente validar" value={stats.pendingEnrollments} icon={<Clock className="h-5 w-5" />} variant={stats.pendingEnrollments > 0 ? "warning" : "default"} />
           <KpiCard title="Contratos firmados" value={stats.signedContractsThisMonth} icon={<FileCheck className="h-5 w-5" />} description="Este mes" variant="success" />
+          <KpiCard title="Ingresos este mes" value={stats.revenueThisMonth} icon={<Banknote className="h-5 w-5" />} variant="success" valueDisplay={fmt(stats.revenueThisMonth)} description="matrículas válidas" />
           <KpiCard title="Certificados pendientes" value={stats.pendingCertificates} icon={<Award className="h-5 w-5" />} variant={stats.pendingCertificates > 0 ? "warning" : "default"} />
+        </div>
+      </section>
+
+      <section>
+        <SectionLabel>Finanzas del mes</SectionLabel>
+        <div className="max-w-lg">
+          <PaymentBreakdownTable rows={stats.salesByPaymentType} monthName={monthName} />
         </div>
       </section>
 

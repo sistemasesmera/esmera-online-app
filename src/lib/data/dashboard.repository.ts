@@ -299,14 +299,22 @@ export type PendingCertItem = {
   enrollments: { students: { full_name: string } | null; courses: { name: string } | null } | null;
 };
 
+export type PaymentBreakdownRow = {
+  paymentType: string;
+  count: number;
+  total: number;
+};
+
 export type AdminStats = {
   activeStudents: number;
   totalStudents: number;
   activeEnrollments: number;
   pendingEnrollments: number;
   signedContractsThisMonth: number;
+  revenueThisMonth: number;
   pendingCertificates: number;
   enrollmentDistribution: Array<{ status: EnrollmentStatus; count: number }>;
+  salesByPaymentType: PaymentBreakdownRow[];
   recentEnrollments: RecentEnrollment[];
   pendingCertificatesList: PendingCertItem[];
 };
@@ -320,6 +328,7 @@ export async function getAdminDashboardStats(): Promise<AdminStats> {
     activeEnrollmentsRes, pendingEnrollmentsRes,
     signedContractsRes, pendingCertsRes,
     enrollmentDistRes, recentEnrollmentsRes, pendingCertListRes,
+    salesByPaymentRes,
   ] = await Promise.all([
     supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "en_formacion"),
     supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null),
@@ -330,7 +339,21 @@ export async function getAdminDashboardStats(): Promise<AdminStats> {
     supabase.from("enrollments").select("status").is("deleted_at", null),
     supabase.from("enrollments").select("id, status, enrollment_date, students!student_id(full_name), courses!course_id(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(6),
     supabase.from("certificates").select("id, enrollments!enrollment_id(students!student_id(full_name), courses!course_id(name))").is("deleted_at", null).eq("status", "pendiente").order("created_at", { ascending: true }).limit(6),
+    supabase.from("contracts").select("amount, payment_type, enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
   ]);
+
+  const validPaymentRows = ((salesByPaymentRes.data ?? []) as Array<{ amount: number; payment_type: string | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
+  const byType = validPaymentRows.reduce<Record<string, { count: number; total: number }>>((acc, r) => {
+    const key = r.payment_type ?? "sin_tipo";
+    if (!acc[key]) acc[key] = { count: 0, total: 0 };
+    acc[key].count++;
+    acc[key].total += r.amount;
+    return acc;
+  }, {});
+  const salesByPaymentType: PaymentBreakdownRow[] = Object.entries(byType)
+    .map(([paymentType, v]) => ({ paymentType, ...v }))
+    .sort((a, b) => b.total - a.total);
+  const revenueThisMonth = validPaymentRows.reduce((s, r) => s + r.amount, 0);
 
   return {
     activeStudents: activeStudentsRes.count ?? 0,
@@ -338,8 +361,10 @@ export async function getAdminDashboardStats(): Promise<AdminStats> {
     activeEnrollments: activeEnrollmentsRes.count ?? 0,
     pendingEnrollments: pendingEnrollmentsRes.count ?? 0,
     signedContractsThisMonth: signedContractsRes.count ?? 0,
+    revenueThisMonth,
     pendingCertificates: pendingCertsRes.count ?? 0,
     enrollmentDistribution: calcEnrollmentDistribution(enrollmentDistRes.data ?? [], ["pendiente", "validada", "activa", "finalizada", "cancelada"]),
+    salesByPaymentType,
     recentEnrollments: (recentEnrollmentsRes.data ?? []) as unknown as RecentEnrollment[],
     pendingCertificatesList: (pendingCertListRes.data ?? []) as unknown as PendingCertItem[],
   };
