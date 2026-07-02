@@ -3,6 +3,13 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { EnrollmentStatus, LeadStatus } from "@/types/database.types";
 
+// Enrollment statuses that generate real revenue
+const MONEY_STATUSES = ["validada", "activa", "finalizada"];
+
+function isMoneyEnrollment(row: { enrollments?: { status: string } | null }): boolean {
+  return !!row.enrollments && MONEY_STATUSES.includes(row.enrollments.status);
+}
+
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
 function calcEnrollmentDistribution(
@@ -138,8 +145,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     supabase.from("leads").select("status"),
     supabase.from("certificates").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "pendiente"),
     supabase.from("contracts").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "firmado").gte("signed_at", startOfMonth),
-    supabase.from("contracts").select("amount, signed_at").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", twelveMonthsAgo),
-    supabase.from("contracts").select("amount, users!created_by(id, full_name)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
+    supabase.from("contracts").select("amount, signed_at, enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", twelveMonthsAgo),
+    supabase.from("contracts").select("amount, users!created_by(id, full_name), enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
     supabase.from("leads").select("id, full_name, status, created_at").order("created_at", { ascending: false }).limit(5),
     supabase.from("enrollments").select("id, status, enrollment_date, students!student_id(full_name), courses!course_id(name)").is("deleted_at", null).order("created_at", { ascending: false }).limit(5),
   ]);
@@ -152,8 +159,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     leadDistRes.data ?? [],
     ["nuevo", "contactado", "cualificado", "convertido", "descartado"]
   );
-  const salesByUser = groupSalesByUser((salesByUserRes.data ?? []) as unknown as SaleRow[]);
-  const monthlySales = buildMonthlySales((monthlySalesRes.data ?? []) as Array<{ amount: number; signed_at: string | null }>, now);
+  const validMonthlySalesRows = ((monthlySalesRes.data ?? []) as Array<{ amount: number; signed_at: string | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
+  const validSalesByUserRows = ((salesByUserRes.data ?? []) as Array<{ amount: number; users: { id: string; full_name: string } | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
+  const salesByUser = groupSalesByUser(validSalesByUserRows as unknown as SaleRow[]);
+  const monthlySales = buildMonthlySales(validMonthlySalesRows as Array<{ amount: number; signed_at: string | null }>, now);
 
   return {
     activeStudents: activeStudentsRes.count ?? 0,
@@ -208,15 +217,17 @@ export async function getJefeComercialStats(): Promise<JefeComercialStats> {
     supabase.from("leads").select("*", { count: "exact", head: true }),
     supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "en_formacion"),
     supabase.from("enrollments").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "activa"),
-    supabase.from("contracts").select("amount").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
-    supabase.from("contracts").select("amount, users!created_by(id, full_name)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
-    supabase.from("contracts").select("amount, signed_at").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", twelveMonthsAgo),
+    supabase.from("contracts").select("amount, enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
+    supabase.from("contracts").select("amount, users!created_by(id, full_name), enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
+    supabase.from("contracts").select("amount, signed_at, enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", twelveMonthsAgo),
     supabase.from("leads").select("status"),
     supabase.from("enrollments").select("status").is("deleted_at", null),
     supabase.from("leads").select("id, full_name, status, created_at").order("created_at", { ascending: false }).limit(8),
   ]);
 
-  const salesRows = (salesThisMonthRes.data ?? []) as { amount: number }[];
+  const salesRows = ((salesThisMonthRes.data ?? []) as Array<{ amount: number; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
+  const validJefeSalesByUser = ((salesByUserRes.data ?? []) as Array<{ amount: number; users: { id: string; full_name: string } | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
+  const validJefeMonthlySales = ((monthlySalesRes.data ?? []) as Array<{ amount: number; signed_at: string | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
 
   return {
     openLeads: openLeadsRes.count ?? 0,
@@ -227,8 +238,8 @@ export async function getJefeComercialStats(): Promise<JefeComercialStats> {
     activeEnrollments: activeEnrollmentsRes.count ?? 0,
     salesThisMonthCount: salesRows.length,
     salesThisMonthTotal: salesRows.reduce((s, r) => s + r.amount, 0),
-    salesByUser: groupSalesByUser((salesByUserRes.data ?? []) as unknown as SaleRow[]),
-    monthlySales: buildMonthlySales((monthlySalesRes.data ?? []) as Array<{ amount: number; signed_at: string | null }>, now),
+    salesByUser: groupSalesByUser(validJefeSalesByUser as unknown as SaleRow[]),
+    monthlySales: buildMonthlySales(validJefeMonthlySales as Array<{ amount: number; signed_at: string | null }>, now),
     leadDistribution: calcLeadDistribution(leadDistRes.data ?? [], ["nuevo", "contactado", "cualificado", "convertido", "descartado"]),
     enrollmentDistribution: calcEnrollmentDistribution(enrollmentDistRes.data ?? [], ["pendiente", "validada", "activa", "finalizada", "cancelada"]),
     recentLeads: (recentLeadsRes.data ?? []) as RecentLead[],
@@ -260,13 +271,14 @@ export async function getComercialDashboardStats(userId: string): Promise<Comerc
     supabase.from("leads").select("*", { count: "exact", head: true }).eq("owner_id", userId).in("status", ["nuevo", "contactado", "cualificado"]),
     supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("assigned_to", userId).eq("status", "en_formacion"),
     supabase.from("enrollments").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "activa"),
-    supabase.from("contracts").select("amount").eq("created_by", userId).eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
+    supabase.from("contracts").select("amount, enrollments!enrollment_id(status)").eq("created_by", userId).eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
     supabase.from("leads").select("status").eq("owner_id", userId),
     supabase.from("leads").select("id, full_name, status, created_at").eq("owner_id", userId).order("created_at", { ascending: false }).limit(8),
-    supabase.from("contracts").select("amount, users!created_by(id, full_name)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
+    supabase.from("contracts").select("amount, users!created_by(id, full_name), enrollments!enrollment_id(status)").eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
   ]);
 
-  const mySalesRows = (mySalesRes.data ?? []) as { amount: number }[];
+  const mySalesRows = ((mySalesRes.data ?? []) as Array<{ amount: number; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
+  const validTeamSalesByUser = ((teamSalesByUserRes.data ?? []) as Array<{ amount: number; users: { id: string; full_name: string } | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
 
   return {
     myOpenLeads: myOpenLeadsRes.count ?? 0,
@@ -276,7 +288,7 @@ export async function getComercialDashboardStats(userId: string): Promise<Comerc
     mySalesThisMonthTotal: mySalesRows.reduce((s, r) => s + r.amount, 0),
     myLeadDistribution: calcLeadDistribution(myLeadDistRes.data ?? [], ["nuevo", "contactado", "cualificado", "convertido", "descartado"]),
     myRecentLeads: (myRecentLeadsRes.data ?? []) as RecentLead[],
-    teamSalesByUser: groupSalesByUser((teamSalesByUserRes.data ?? []) as unknown as SaleRow[]),
+    teamSalesByUser: groupSalesByUser(validTeamSalesByUser as unknown as SaleRow[]),
   };
 }
 
