@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireRole } from "@/lib/auth/require-role";
 import { createCertificateSchema, CERT_STATUS_TRANSITIONS, type CreateCertificateInput } from "@/lib/domain/certificates/schema";
+import { sendNotificationsToRole } from "@/lib/data/notifications.repository";
 import { CAPABILITIES } from "@/lib/domain/shared/permissions";
 import { createClient } from "@/lib/supabase/server";
 import type { CertificateStatus } from "@/types/database.types";
@@ -27,6 +28,15 @@ export async function createCertificate(input: CreateCertificateInput): Promise<
   });
 
   if (error) return { error: error.message, success: false };
+
+  await sendNotificationsToRole("administracion", {
+    type: "certificado_pendiente",
+    title: "Certificado pendiente de emisión",
+    message: "Se ha creado un nuevo certificado que requiere ser emitido.",
+    related_entity_type: "certificate",
+    related_entity_id: parsed.data.enrollment_id,
+  });
+
   revalidatePath("/certificates");
   return { error: null, success: true };
 }

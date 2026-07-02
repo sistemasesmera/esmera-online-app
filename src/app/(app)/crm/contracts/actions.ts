@@ -8,6 +8,7 @@ import {
   CONTRACT_STATUS_TRANSITIONS,
   type CreateContractInput,
 } from "@/lib/domain/contracts/schema";
+import { sendNotificationsToRole } from "@/lib/data/notifications.repository";
 import { CAPABILITIES } from "@/lib/domain/shared/permissions";
 import { createClient } from "@/lib/supabase/server";
 import type { ContractStatus } from "@/types/database.types";
@@ -62,6 +63,16 @@ export async function updateContractStatus(id: string, newStatus: ContractStatus
 
   const { error } = await supabase.from("contracts").update(updateData).eq("id", id);
   if (error) return { error: error.message, success: false };
+
+  if (newStatus === "firmado") {
+    await sendNotificationsToRole("jefe_comercial", {
+      type: "nueva_venta",
+      title: "Contrato firmado — nueva venta",
+      message: "Un contrato ha sido marcado como firmado.",
+      related_entity_type: "contract",
+      related_entity_id: id,
+    });
+  }
 
   revalidatePath("/crm/contracts");
   return { error: null, success: true };

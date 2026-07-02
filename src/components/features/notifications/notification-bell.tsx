@@ -2,6 +2,7 @@
 
 import { Bell } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { markNotificationRead, markAllNotificationsRead } from "@/app/(app)/notifications/actions";
@@ -20,7 +21,17 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   certificado_pendiente: "Certificado pendiente",
 };
 
+function getNotificationLink(n: NotificationRow): string | null {
+  if (n.related_entity_type === "enrollment" && n.related_entity_id) {
+    return `/enrollments/${n.related_entity_id}`;
+  }
+  if (n.related_entity_type === "certificate") return "/certificates";
+  if (n.related_entity_type === "contract") return "/crm/contracts";
+  return null;
+}
+
 export function NotificationBell({ userId }: { userId: string }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRow[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -103,7 +114,11 @@ export function NotificationBell({ userId }: { userId: string }) {
               <div
                 key={n.id}
                 className={`px-4 py-3 border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors ${!n.is_read ? "bg-muted/30" : ""}`}
-                onClick={() => { if (!n.is_read) handleMarkRead(n.id); }}
+                onClick={() => {
+                  if (!n.is_read) handleMarkRead(n.id);
+                  const link = getNotificationLink(n);
+                  if (link) { setOpen(false); router.push(link); }
+                }}
               >
                 <div className="flex items-start gap-2">
                   {!n.is_read && (

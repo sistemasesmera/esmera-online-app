@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requireRole } from "@/lib/auth/require-role";
 import { logActivity } from "@/lib/data/activity-logs.repository";
+import { sendNotification, sendNotificationsToRole } from "@/lib/data/notifications.repository";
 import {
   createEnrollmentSchema,
   ENROLLMENT_STATUS_TRANSITIONS,
@@ -80,6 +81,14 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<Ac
     metadata: { course: course?.name },
   });
 
+  await sendNotificationsToRole("administracion", {
+    type: "matricula_pendiente",
+    title: "Nueva matrícula pendiente de validar",
+    message: `Se ha creado una nueva matrícula en "${course?.name ?? "curso desconocido"}" que requiere validación.`,
+    related_entity_type: "enrollment",
+    related_entity_id: enrollment.id,
+  });
+
   revalidatePath("/enrollments");
   revalidatePath(`/students/${parsed.data.student_id}`);
   return { error: null, success: true };
@@ -130,6 +139,26 @@ export async function updateEnrollmentStatus(
     metadata: { from: current.status, to: newStatus },
   });
 
+  if (newStatus === "validada") {
+    await sendNotificationsToRole("jefe_comercial", {
+      type: "matricula_pendiente",
+      title: "Matrícula validada",
+      message: "Una matrícula ha sido validada y está lista para asignar tutor y activar.",
+      related_entity_type: "enrollment",
+      related_entity_id: id,
+    });
+  }
+
+  if (newStatus === "finalizada") {
+    await sendNotificationsToRole("administracion", {
+      type: "curso_finalizado",
+      title: "Curso finalizado",
+      message: "Una matrícula ha sido marcada como finalizada. Revisa si corresponde emitir certificado.",
+      related_entity_type: "enrollment",
+      related_entity_id: id,
+    });
+  }
+
   revalidatePath("/enrollments");
   revalidatePath(`/students/${current.student_id}`);
   return { error: null, success: true };
@@ -177,6 +206,24 @@ export async function assignTutor(
     enrollmentId: id,
     metadata: { tutor_id: tutorId, platform_id: platformId },
   });
+
+  if (tutorId) {
+    const supabase = await createClient();
+    const { data: tutorRecord } = await supabase
+      .from("tutors")
+      .select("user_id")
+      .eq("id", tutorId)
+      .single();
+    if (tutorRecord) {
+      await sendNotification(tutorRecord.user_id, {
+        type: "tutor_asignado",
+        title: "Te han asignado a una matrícula",
+        message: "Se te ha asignado como tutor de una nueva matrícula. Revisa tus alumnos activos.",
+        related_entity_type: "enrollment",
+        related_entity_id: id,
+      });
+    }
+  }
 
   revalidatePath("/enrollments");
   revalidatePath(`/students/${current.student_id}`);
@@ -230,6 +277,24 @@ export async function activateEnrollment(
     enrollmentId: id,
     metadata: { from: "validada", to: "activa", platform_id, tutor_id },
   });
+
+  if (tutor_id) {
+    const supabase = await createClient();
+    const { data: tutorRecord } = await supabase
+      .from("tutors")
+      .select("user_id")
+      .eq("id", tutor_id)
+      .single();
+    if (tutorRecord) {
+      await sendNotification(tutorRecord.user_id, {
+        type: "tutor_asignado",
+        title: "Alumno puesto en curso",
+        message: "Una de tus matrículas ha sido activada y el alumno está ahora en formación.",
+        related_entity_type: "enrollment",
+        related_entity_id: id,
+      });
+    }
+  }
 
   revalidatePath("/enrollments");
   revalidatePath(`/students/${current.student_id}`);
@@ -314,5 +379,14 @@ export async function signContractForEnrollment(
   if (enrollment) revalidatePath(`/students/${enrollment.student_id}`);
   revalidatePath("/enrollments");
   revalidatePath(`/enrollments/${enrollmentId}`);
+
+  await sendNotificationsToRole("jefe_comercial", {
+    type: "nueva_venta",
+    title: "Contrato firmado — nueva venta",
+    message: "Se ha registrado la firma de un contrato.",
+    related_entity_type: "enrollment",
+    related_entity_id: enrollmentId,
+  });
+
   return { error: null, success: true };
 }

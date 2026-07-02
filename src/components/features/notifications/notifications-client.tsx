@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCheck } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -19,6 +20,15 @@ const TYPE_LABELS: Record<NotificationType, string> = {
   curso_finalizado: "Curso finalizado",
   certificado_pendiente: "Certificado pendiente",
 };
+
+function getNotificationLink(n: NotificationRow): string | null {
+  if (n.related_entity_type === "enrollment" && n.related_entity_id) {
+    return `/enrollments/${n.related_entity_id}`;
+  }
+  if (n.related_entity_type === "certificate") return "/certificates";
+  if (n.related_entity_type === "contract") return "/crm/contracts";
+  return null;
+}
 
 export function NotificationsClient({ initialNotifications }: { initialNotifications: NotificationRow[] }) {
   const [notifications, setNotifications] = useState<NotificationRow[]>(initialNotifications);
@@ -66,11 +76,9 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
         </Card>
       ) : (
         <div className="flex flex-col gap-2">
-          {notifications.map((n) => (
-            <Card
-              key={n.id}
-              className={`transition-colors ${!n.is_read ? "border-primary/30 bg-muted/20" : ""}`}
-            >
+          {notifications.map((n) => {
+            const link = getNotificationLink(n);
+            const cardContent = (
               <CardContent className="py-4 flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
                   {!n.is_read && (
@@ -92,6 +100,9 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
                     </div>
                     <p className="text-sm font-medium">{n.title}</p>
                     <p className="text-sm text-muted-foreground mt-0.5">{n.message}</p>
+                    {link && (
+                      <p className="text-xs text-primary mt-1 hover:underline">Ver detalles →</p>
+                    )}
                   </div>
                 </div>
                 {!n.is_read && (
@@ -100,14 +111,27 @@ export function NotificationsClient({ initialNotifications }: { initialNotificat
                     size="sm"
                     className="shrink-0 text-xs h-7"
                     disabled={isPending}
-                    onClick={() => handleMarkRead(n.id)}
+                    onClick={(e) => { e.preventDefault(); handleMarkRead(n.id); }}
                   >
                     Marcar leída
                   </Button>
                 )}
               </CardContent>
-            </Card>
-          ))}
+            );
+            return (
+              <Card
+                key={n.id}
+                className={`transition-colors ${!n.is_read ? "border-primary/30 bg-muted/20" : ""}`}
+                onClick={() => { if (!n.is_read) handleMarkRead(n.id); }}
+              >
+                {link ? (
+                  <Link href={link} className="block">
+                    {cardContent}
+                  </Link>
+                ) : cardContent}
+              </Card>
+            );
+          })}
         </div>
       )}
     </>
