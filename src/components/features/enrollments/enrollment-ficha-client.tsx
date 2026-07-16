@@ -284,6 +284,7 @@ export function EnrollmentFichaClient({
   const [certPendingFile, setCertPendingFile] = useState<File | null>(null);
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
+  const [confirmTransition, setConfirmTransition] = useState<EnrollmentStatus | null>(null);
 
   const student = enrollment.students;
   const contract = enrollment.contracts?.[0];
@@ -323,6 +324,21 @@ export function EnrollmentFichaClient({
       setActivateOpen(true);
       return;
     }
+    if (next === "finalizada" || next === "cancelada") {
+      setConfirmTransition(next);
+      return;
+    }
+    startTransition(async () => {
+      const result = await updateEnrollmentStatus(enrollment.id, next);
+      if (result.error) toast.error(result.error);
+      else toast.success(`Matrícula: ${ENROLLMENT_STATUS_LABELS[next]}`);
+    });
+  }
+
+  function handleConfirmedTransition() {
+    if (!confirmTransition) return;
+    const next = confirmTransition;
+    setConfirmTransition(null);
     startTransition(async () => {
       const result = await updateEnrollmentStatus(enrollment.id, next);
       if (result.error) toast.error(result.error);
@@ -1305,6 +1321,34 @@ export function EnrollmentFichaClient({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* ── Confirm destructive transition (finalizada / cancelada) ── */}
+      <Dialog open={!!confirmTransition} onOpenChange={(open) => { if (!open) setConfirmTransition(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirmTransition === "cancelada" ? "¿Cancelar matrícula?" : "¿Finalizar matrícula?"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {confirmTransition === "cancelada"
+              ? "Esta acción marcará la matrícula como cancelada. ¿Estás seguro?"
+              : "Esta acción marcará la matrícula como finalizada. ¿Estás seguro?"}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmTransition(null)} disabled={isPending}>
+              Volver
+            </Button>
+            <Button
+              variant={confirmTransition === "cancelada" ? "destructive" : "default"}
+              onClick={handleConfirmedTransition}
+              disabled={isPending}
+            >
+              {isPending ? "Guardando…" : confirmTransition === "cancelada" ? "Sí, cancelar" : "Sí, finalizar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
