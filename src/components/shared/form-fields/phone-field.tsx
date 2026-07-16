@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
-import { Controller, type Control, type FieldError } from "react-hook-form";
+import { Controller, type Control, type FieldError, type FieldValues, type Path } from "react-hook-form";
 import PhoneInput, { type Value } from "react-phone-number-input";
 import flags from "react-phone-number-input/flags";
 
@@ -18,7 +18,7 @@ const PhoneInputAdapter = forwardRef<HTMLInputElement, React.InputHTMLAttributes
 );
 PhoneInputAdapter.displayName = "PhoneInputAdapter";
 
-export function PhoneField({
+export function PhoneField<T extends FieldValues>({
   label,
   name,
   control,
@@ -26,9 +26,8 @@ export function PhoneField({
   required,
 }: {
   label: string;
-  name: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
+  name: Path<T>;
+  control: Control<T>;
   error?: FieldError;
   required?: boolean;
 }) {
