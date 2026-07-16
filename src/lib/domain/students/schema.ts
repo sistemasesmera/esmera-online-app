@@ -2,10 +2,21 @@ import { z } from "zod";
 
 import type { StudentStatus } from "@/types/database.types";
 
-export const STUDENT_STATUSES: StudentStatus[] = ["en_formacion", "expediente_cerrado"];
+export const STUDENT_STATUSES: StudentStatus[] = [
+  "en_formacion",
+  "seguimiento_activo",
+  "riesgo_abandono",
+  "sin_actividad",
+  "finalizado",
+  "expediente_cerrado",
+];
 
 export const STUDENT_STATUS_LABELS: Record<StudentStatus, string> = {
-  en_formacion: "En formación",
+  en_formacion:       "En formación",
+  seguimiento_activo: "Seguimiento activo",
+  riesgo_abandono:    "Riesgo de abandono",
+  sin_actividad:      "Sin actividad",
+  finalizado:         "Finalizado",
   expediente_cerrado: "Expediente cerrado",
 };
 
