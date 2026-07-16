@@ -41,7 +41,7 @@ export const MANUAL_LEAD_SOURCES: LeadSource[] = ["organico"];
 export const leadSchema = z.object({
   full_name: z.string().min(1, "Requerido"),
   email: z.string().optional(),
-  phone: z.string().optional(),
+  phone: z.string().min(1, "El teléfono es requerido"),
   source: z.enum(LEAD_SOURCES as [LeadSource, ...LeadSource[]]),
   status: z.enum(LEAD_STATUSES as [LeadStatus, ...LeadStatus[]]),
   interested_course: z.string().optional(),

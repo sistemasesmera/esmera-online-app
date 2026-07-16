@@ -86,7 +86,7 @@ export function LeadForm({ lead, users, currentUserId, canAssign = false, onSucc
       />
       <div className="grid grid-cols-2 gap-4">
         <TextField label="Email (opcional)" type="email" registration={form.register("email")} error={form.formState.errors.email} />
-        <TextField label="Teléfono (opcional)" registration={form.register("phone")} error={form.formState.errors.phone} />
+        <TextField label="Teléfono" registration={form.register("phone")} error={form.formState.errors.phone} required />
       </div>
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Origen</span>
