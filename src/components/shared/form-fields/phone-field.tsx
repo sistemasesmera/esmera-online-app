@@ -3,6 +3,7 @@
 import { forwardRef } from "react";
 import { Controller, type Control, type FieldError } from "react-hook-form";
 import PhoneInput, { type Value } from "react-phone-number-input";
+import flags from "react-phone-number-input/flags";
 
 import { Field, FieldError as FieldErrorMessage, FieldLabel } from "@/components/ui/field";
 
@@ -47,6 +48,7 @@ export function PhoneField({
           render={({ field }) => (
             <PhoneInput
               id={name}
+              flags={flags}
               defaultCountry="ES"
               value={(field.value as Value) ?? undefined}
               onChange={(val) => field.onChange(val ?? "")}
