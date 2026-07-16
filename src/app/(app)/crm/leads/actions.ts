@@ -7,6 +7,7 @@ import { logActivity } from "@/lib/data/activity-logs.repository";
 import { leadSchema, type LeadInput } from "@/lib/domain/leads/schema";
 import { convertLeadSchema, type ConvertLeadInput } from "@/lib/domain/students/schema";
 import { CAPABILITIES, roleHasCapability } from "@/lib/domain/shared/permissions";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type ActionResult = { error: string | null; success: boolean };
@@ -303,7 +304,10 @@ export async function convertLeadToStudent(
   });
 
   // 4. Transfer lead attachments to the new student
-  await supabase
+  // Use admin client to bypass RLS — at this point the rows have student_id=null
+  // so user-scoped policies would silently match 0 rows.
+  const adminClient = createAdminClient();
+  await adminClient
     .from("student_attachments")
     .update({ student_id: student.id })
     .eq("lead_id", leadId);
