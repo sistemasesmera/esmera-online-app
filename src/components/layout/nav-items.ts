@@ -3,6 +3,7 @@ import {
   Bell,
   BookMarked,
   BookOpen,
+  Bot,
   ClipboardList,
   Code2,
   GraduationCap,
@@ -83,6 +84,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Administración",
     items: [
       { label: "Usuarios", href: "/admin/users", icon: UserCog, roles: ["tech"] },
+      { label: "Agente IA Web", href: "/admin/agente-ia", icon: Bot, roles: ["tech"] },
       { label: "Logs", href: "/admin/logs", icon: ClipboardList, roles: ["tech"] },
       { label: "API", href: "/api", icon: Code2, roles: ["tech"] },
     ],
