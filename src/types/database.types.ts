@@ -516,7 +516,7 @@ export type Database = {
       }
       lead_interactions: {
         Row: {
-          contact_type: string
+          contact_type: LeadContactType
           created_at: string
           followup_date: string
           id: string
@@ -526,7 +526,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          contact_type: string
+          contact_type: LeadContactType
           created_at?: string
           followup_date?: string
           id?: string
@@ -536,7 +536,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          contact_type?: string
+          contact_type?: LeadContactType
           created_at?: string
           followup_date?: string
           id?: string
