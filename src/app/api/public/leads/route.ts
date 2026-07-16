@@ -52,17 +52,13 @@ export async function POST(req: NextRequest) {
   // Check duplicate lead by phone
   const { data: existingLead } = await supabase
     .from("leads")
-    .select("id, full_name, status")
+    .select("id")
     .eq("phone", cleanPhone)
     .maybeSingle();
 
   if (existingLead) {
     return Response.json(
-      {
-        error: "duplicate_lead",
-        message: `Ya existe un lead con este teléfono (${existingLead.full_name}, estado: ${existingLead.status})`,
-        existing_id: existingLead.id,
-      },
+      { error: "duplicate_lead", message: "Este teléfono ya está registrado." },
       { status: 409, headers: CORS_HEADERS }
     );
   }
@@ -70,18 +66,14 @@ export async function POST(req: NextRequest) {
   // Check duplicate student by phone
   const { data: existingStudent } = await supabase
     .from("students")
-    .select("id, full_name")
+    .select("id")
     .eq("phone", cleanPhone)
     .is("deleted_at", null)
     .maybeSingle();
 
   if (existingStudent) {
     return Response.json(
-      {
-        error: "already_student",
-        message: `Este teléfono pertenece a un alumno ya registrado (${existingStudent.full_name})`,
-        existing_id: existingStudent.id,
-      },
+      { error: "already_student", message: "Este teléfono ya está registrado." },
       { status: 409, headers: CORS_HEADERS }
     );
   }
