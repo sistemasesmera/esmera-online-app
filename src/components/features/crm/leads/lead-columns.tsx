@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Globe, Leaf, Megaphone, Phone, Share2, Users, Calendar, MoreHorizontal } from "lucide-react";
+import { ArrowRight, Bot, Globe, Leaf, Megaphone, Phone, Share2, Users, Calendar, MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -48,6 +48,11 @@ const SOURCE_CONFIG: Record<LeadSource, SourceConfig> = {
     label: "Evento",
     icon: Calendar,
     className: "bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800",
+  },
+  agente_web: {
+    label: "Agente Web",
+    icon: Bot,
+    className: "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-800",
   },
   otro: {
     label: "Otro",

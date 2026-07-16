@@ -21,7 +21,7 @@ import {
   LEAD_SOURCE_LABELS,
   type LeadInput,
 } from "@/lib/domain/leads/schema";
-import { Globe, Leaf, Megaphone, FileText } from "lucide-react";
+import { Bot, Globe, Leaf, Megaphone, FileText } from "lucide-react";
 import { PROVINCE_OPTIONS } from "@/lib/domain/shared/provinces";
 import type { LeadSource } from "@/types/database.types";
 
@@ -33,6 +33,7 @@ const SOURCE_ICONS: Record<LeadSource, React.ReactNode> = {
   redes_sociales:   <Globe className="h-3.5 w-3.5 text-pink-600" />,
   llamada_entrante: <Globe className="h-3.5 w-3.5 text-teal-600" />,
   evento:           <Globe className="h-3.5 w-3.5 text-orange-600" />,
+  agente_web:       <Bot className="h-3.5 w-3.5 text-indigo-600" />,
   otro:             <Globe className="h-3.5 w-3.5 text-slate-500" />,
 };
 

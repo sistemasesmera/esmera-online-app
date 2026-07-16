@@ -578,7 +578,7 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           province: string | null
-          source: string
+          source: Database["public"]["Enums"]["lead_source"]
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
         }
@@ -597,7 +597,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           province?: string | null
-          source?: string
+          source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -616,7 +616,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           province?: string | null
-          source?: string
+          source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -1178,6 +1178,7 @@ export type Database = {
         | "otro"
         | "meta_ads"
         | "organico"
+        | "agente_web"
       lead_status:
         | "nuevo"
         | "contactado"
@@ -1361,6 +1362,7 @@ export const Constants = {
         "otro",
         "meta_ads",
         "organico",
+        "agente_web",
       ],
       lead_status: [
         "nuevo",

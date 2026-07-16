@@ -3,7 +3,7 @@ import { z } from "zod";
 import type { LeadSource, LeadStatus } from "@/types/database.types";
 
 export const LEAD_STATUSES: LeadStatus[] = ["nuevo", "contactado", "cualificado", "convertido", "descartado"];
-export const LEAD_SOURCES: LeadSource[] = ["web", "meta_ads", "organico", "referido", "redes_sociales", "llamada_entrante", "evento", "otro"];
+export const LEAD_SOURCES: LeadSource[] = ["web", "meta_ads", "organico", "referido", "redes_sociales", "llamada_entrante", "evento", "agente_web", "otro"];
 
 export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   nuevo: "Nuevo",
@@ -21,6 +21,7 @@ export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   redes_sociales: "Redes Sociales",
   llamada_entrante: "Llamada",
   evento: "Evento",
+  agente_web: "Agente Web",
   otro: "Otro",
 };
 

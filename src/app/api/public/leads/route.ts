@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/utils/phone";
 
-const LEAD_SOURCES = ["web", "meta_ads", "organico"] as const;
+const LEAD_SOURCES = ["web", "meta_ads", "organico", "referido", "redes_sociales", "llamada_entrante", "evento", "agente_web", "otro"] as const;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       full_name: String(full_name).trim(),
       email:     email ? String(email).trim() : null,
       phone:     cleanPhone,
-      source:    (source as typeof LEAD_SOURCES[number]) ?? "web",
+      source:    (source as typeof LEAD_SOURCES[number]) ?? "agente_web",
       status:    "nuevo",
       interested_course: interested_course ? String(interested_course).trim() : null,
       notes:     notes ? String(notes).trim() : null,

@@ -96,6 +96,7 @@ const SOURCE_ICONS: Record<LeadSource, React.ReactNode> = {
   redes_sociales:   <Globe className="h-3 w-3 text-pink-600" />,
   llamada_entrante: <Globe className="h-3 w-3 text-teal-600" />,
   evento:           <Globe className="h-3 w-3 text-orange-600" />,
+  agente_web:       <Globe className="h-3 w-3 text-indigo-600" />,
   otro:             <Globe className="h-3 w-3 text-slate-500" />,
 };
 const SOURCE_CLS: Record<LeadSource, string> = {
@@ -106,6 +107,7 @@ const SOURCE_CLS: Record<LeadSource, string> = {
   redes_sociales:   "bg-pink-50 text-pink-700 border-pink-200",
   llamada_entrante: "bg-teal-50 text-teal-700 border-teal-200",
   evento:           "bg-orange-50 text-orange-700 border-orange-200",
+  agente_web:       "bg-indigo-50 text-indigo-700 border-indigo-200",
   otro:             "bg-slate-50 text-slate-700 border-slate-200",
 };
 
