@@ -3,6 +3,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const LEAD_SOURCES = ["web", "meta_ads", "organico"] as const;
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, x-api-key, Authorization",
+};
+
+export async function OPTIONS() {
+  return new Response(null, { status: 204, headers: CORS_HEADERS });
+}
+
 function authenticate(req: NextRequest): boolean {
   const key = process.env.PUBLIC_API_KEY;
   if (!key) return false;
@@ -16,26 +26,26 @@ function normalizePhone(phone: string): string {
 
 export async function POST(req: NextRequest) {
   if (!authenticate(req)) {
-    return Response.json({ error: "API key inválida o ausente" }, { status: 401 });
+    return Response.json({ error: "API key inválida o ausente" }, { status: 401, headers: CORS_HEADERS });
   }
 
   let body: Record<string, unknown>;
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "Body JSON inválido" }, { status: 400 });
+    return Response.json({ error: "Body JSON inválido" }, { status: 400, headers: CORS_HEADERS });
   }
 
   const { full_name, email, phone, source, interested_course, notes } = body;
 
   if (!full_name || typeof full_name !== "string" || !String(full_name).trim()) {
-    return Response.json({ error: "full_name es requerido" }, { status: 422 });
+    return Response.json({ error: "full_name es requerido" }, { status: 422, headers: CORS_HEADERS });
   }
   if (!phone || typeof phone !== "string" || !String(phone).trim()) {
-    return Response.json({ error: "phone es requerido" }, { status: 422 });
+    return Response.json({ error: "phone es requerido" }, { status: 422, headers: CORS_HEADERS });
   }
   if (source && !LEAD_SOURCES.includes(source as typeof LEAD_SOURCES[number])) {
-    return Response.json({ error: `source debe ser uno de: ${LEAD_SOURCES.join(", ")}` }, { status: 422 });
+    return Response.json({ error: `source debe ser uno de: ${LEAD_SOURCES.join(", ")}` }, { status: 422, headers: CORS_HEADERS });
   }
 
   const cleanPhone = normalizePhone(String(phone).trim());
@@ -56,7 +66,7 @@ export async function POST(req: NextRequest) {
         message: `Ya existe un lead con este teléfono (${existingLead.full_name}, estado: ${existingLead.status})`,
         existing_id: existingLead.id,
       },
-      { status: 409 }
+      { status: 409, headers: CORS_HEADERS }
     );
   }
 
@@ -75,7 +85,7 @@ export async function POST(req: NextRequest) {
         message: `Este teléfono pertenece a un alumno ya registrado (${existingStudent.full_name})`,
         existing_id: existingStudent.id,
       },
-      { status: 409 }
+      { status: 409, headers: CORS_HEADERS }
     );
   }
 
@@ -94,8 +104,8 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) {
-    return Response.json({ error: error.message }, { status: 500 });
+    return Response.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
   }
 
-  return Response.json({ ok: true, lead: data }, { status: 201 });
+  return Response.json({ ok: true, lead: data }, { status: 201, headers: CORS_HEADERS });
 }
