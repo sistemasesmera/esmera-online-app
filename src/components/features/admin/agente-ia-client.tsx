@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition, useRef, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Bot, Send, Loader2, CheckCircle2, XCircle, Copy, Check } from "lucide-react";
+import { Bot, CheckCircle2, XCircle, Copy, Check } from "lucide-react";
 
 import { saveAgentConfig, type AgentConfig } from "@/app/(app)/admin/agente-ia/actions";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,6 @@ const MODELS = [
   { value: "gpt-4o", label: "GPT-4o (más capaz)" },
   { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
 ];
-
-type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export function AgentIaClient({
   config,
@@ -42,15 +40,6 @@ export function AgentIaClient({
   const [systemPrompt, setSystemPrompt] = useState(config.system_prompt);
   const [knowledge, setKnowledge] = useState(config.knowledge);
 
-  // Preview chat
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [chatMessages]);
 
   function handleSave() {
     startTransition(async () => {
@@ -60,33 +49,7 @@ export function AgentIaClient({
     });
   }
 
-  async function handleChatSend() {
-    if (!chatInput.trim() || isChatLoading) return;
-    const userMsg: ChatMessage = { role: "user", content: chatInput.trim() };
-    setChatMessages((prev) => [...prev, userMsg]);
-    setChatInput("");
-    setIsChatLoading(true);
-    try {
-      const res = await fetch("/api/public/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": "preview-internal" },
-        body: JSON.stringify({
-          messages: [...chatMessages, userMsg],
-          preview: true,
-          overrides: { system_prompt: systemPrompt, knowledge, model, welcome_message: welcomeMessage },
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) toast.error(data.error ?? "Error al conectar con el agente");
-      else setChatMessages((prev) => [...prev, { role: "assistant", content: data.message }]);
-    } catch {
-      toast.error("Error de red");
-    } finally {
-      setIsChatLoading(false);
-    }
-  }
-
-  return (
+return (
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -261,50 +224,20 @@ PREGUNTAS FRECUENTES
 
         {/* ── Vista previa ── */}
         <TabsContent value="preview" className="mt-4">
-          <div className="border rounded-lg flex flex-col h-[520px]">
-            <div className="border-b px-4 py-3 flex items-center gap-2">
+          <div className="border rounded-lg overflow-hidden" style={{ height: 560 }}>
+            <div className="border-b px-4 py-3 flex items-center gap-2 bg-muted/40">
               <Bot className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Vista previa — usa la configuración actual del editor</span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
-              {chatMessages.length === 0 && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-2xl rounded-tl-sm px-3 py-2 text-sm max-w-[80%]">
-                    {welcomeMessage || "¡Hola! ¿En qué puedo ayudarte?"}
-                  </div>
-                </div>
+              <span className="text-sm font-medium">Widget real — guarda los cambios antes de probar</span>
+              {!hasApiKey && (
+                <span className="ml-auto text-xs text-destructive font-medium">⚠ Falta OPENAI_API_KEY</span>
               )}
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`rounded-2xl px-3 py-2 text-sm max-w-[80%] whitespace-pre-wrap ${msg.role === "user" ? "bg-primary text-primary-foreground rounded-tr-sm" : "bg-muted rounded-tl-sm"}`}>
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              {isChatLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-2xl rounded-tl-sm px-3 py-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  </div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
             </div>
-            <div className="border-t p-3 flex gap-2">
-              <Input
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Escribe un mensaje…"
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
-                disabled={isChatLoading || !hasApiKey}
-              />
-              <Button size="icon" onClick={handleChatSend} disabled={!chatInput.trim() || isChatLoading || !hasApiKey}>
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-            {!hasApiKey && (
-              <p className="text-xs text-destructive text-center pb-2">Configura OPENAI_API_KEY para usar la vista previa</p>
-            )}
+            <iframe
+              src="/api/widget-frame"
+              className="w-full border-0"
+              style={{ height: 516 }}
+              title="Widget preview"
+            />
           </div>
         </TabsContent>
       </Tabs>
