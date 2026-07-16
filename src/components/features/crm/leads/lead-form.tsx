@@ -26,9 +26,14 @@ import { PROVINCE_OPTIONS } from "@/lib/domain/shared/provinces";
 import type { LeadSource } from "@/types/database.types";
 
 const SOURCE_ICONS: Record<LeadSource, React.ReactNode> = {
-  organico: <Leaf className="h-3.5 w-3.5 text-emerald-600" />,
-  meta_ads: <Megaphone className="h-3.5 w-3.5 text-blue-600" />,
-  web:      <Globe className="h-3.5 w-3.5 text-violet-600" />,
+  organico:         <Leaf className="h-3.5 w-3.5 text-emerald-600" />,
+  meta_ads:         <Megaphone className="h-3.5 w-3.5 text-blue-600" />,
+  web:              <Globe className="h-3.5 w-3.5 text-violet-600" />,
+  referido:         <Globe className="h-3.5 w-3.5 text-amber-600" />,
+  redes_sociales:   <Globe className="h-3.5 w-3.5 text-pink-600" />,
+  llamada_entrante: <Globe className="h-3.5 w-3.5 text-teal-600" />,
+  evento:           <Globe className="h-3.5 w-3.5 text-orange-600" />,
+  otro:             <Globe className="h-3.5 w-3.5 text-slate-500" />,
 };
 
 type Props = {

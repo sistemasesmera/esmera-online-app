@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Globe, Leaf, Megaphone } from "lucide-react";
+import { ArrowRight, Globe, Leaf, Megaphone, Phone, Share2, Users, Calendar, MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -28,6 +28,31 @@ const SOURCE_CONFIG: Record<LeadSource, SourceConfig> = {
     label: "Web",
     icon: Globe,
     className: "bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-800",
+  },
+  referido: {
+    label: "Referido",
+    icon: Users,
+    className: "bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-800",
+  },
+  redes_sociales: {
+    label: "Redes Sociales",
+    icon: Share2,
+    className: "bg-pink-50 text-pink-700 border border-pink-200 dark:bg-pink-900/40 dark:text-pink-300 dark:border-pink-800",
+  },
+  llamada_entrante: {
+    label: "Llamada",
+    icon: Phone,
+    className: "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-800",
+  },
+  evento: {
+    label: "Evento",
+    icon: Calendar,
+    className: "bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-800",
+  },
+  otro: {
+    label: "Otro",
+    icon: MoreHorizontal,
+    className: "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
   },
 };
 

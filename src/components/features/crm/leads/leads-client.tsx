@@ -89,14 +89,24 @@ const ACTIVE_STATUSES: LeadStatus[] = ["nuevo", "contactado", "cualificado"];
 const TERMINAL_STATUSES: LeadStatus[] = ["convertido", "descartado"];
 
 const SOURCE_ICONS: Record<LeadSource, React.ReactNode> = {
-  organico: <Leaf className="h-3 w-3 text-emerald-600" />,
-  meta_ads: <Megaphone className="h-3 w-3 text-blue-600" />,
-  web:      <Globe className="h-3 w-3 text-violet-600" />,
+  organico:         <Leaf className="h-3 w-3 text-emerald-600" />,
+  meta_ads:         <Megaphone className="h-3 w-3 text-blue-600" />,
+  web:              <Globe className="h-3 w-3 text-violet-600" />,
+  referido:         <Globe className="h-3 w-3 text-amber-600" />,
+  redes_sociales:   <Globe className="h-3 w-3 text-pink-600" />,
+  llamada_entrante: <Globe className="h-3 w-3 text-teal-600" />,
+  evento:           <Globe className="h-3 w-3 text-orange-600" />,
+  otro:             <Globe className="h-3 w-3 text-slate-500" />,
 };
 const SOURCE_CLS: Record<LeadSource, string> = {
-  organico: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  meta_ads: "bg-blue-50 text-blue-700 border-blue-200",
-  web:      "bg-violet-50 text-violet-700 border-violet-200",
+  organico:         "bg-emerald-50 text-emerald-700 border-emerald-200",
+  meta_ads:         "bg-blue-50 text-blue-700 border-blue-200",
+  web:              "bg-violet-50 text-violet-700 border-violet-200",
+  referido:         "bg-amber-50 text-amber-700 border-amber-200",
+  redes_sociales:   "bg-pink-50 text-pink-700 border-pink-200",
+  llamada_entrante: "bg-teal-50 text-teal-700 border-teal-200",
+  evento:           "bg-orange-50 text-orange-700 border-orange-200",
+  otro:             "bg-slate-50 text-slate-700 border-slate-200",
 };
 
 /* ═══════════════════════════════════════════════════════════════
