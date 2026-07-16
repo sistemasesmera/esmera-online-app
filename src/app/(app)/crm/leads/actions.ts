@@ -9,6 +9,7 @@ import { convertLeadSchema, type ConvertLeadInput } from "@/lib/domain/students/
 import { CAPABILITIES, roleHasCapability } from "@/lib/domain/shared/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { normalizePhone } from "@/lib/utils/phone";
 
 type ActionResult = { error: string | null; success: boolean };
 
@@ -25,12 +26,21 @@ export async function createLead(input: LeadInput): Promise<ActionResult> {
 
   const { email, phone, interested_course, notes, dni_nie, address, province, postal_code, birth_date } = parsed.data;
   const supabase = await createClient();
+
+  if (phone) {
+    const cleanPhone = normalizePhone(phone);
+    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    if (dupLead) return { error: `Ya existe un lead con ese teléfono (${dupLead.full_name})`, success: false };
+    const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    if (dupStudent) return { error: `Ese teléfono pertenece a un alumno ya registrado (${dupStudent.full_name})`, success: false };
+  }
+
   const { data: created, error } = await supabase.from("leads").insert({
     full_name: parsed.data.full_name,
     source: parsed.data.source,
     status: "nuevo" as const,
     email: email || null,
-    phone: phone || null,
+    phone: phone ? normalizePhone(phone) : null,
     interested_course: interested_course || null,
     notes: null,
     owner_id: currentUser.id,
@@ -72,12 +82,21 @@ export async function updateLead(id: string, input: LeadInput): Promise<ActionRe
   const { email, phone, interested_course, notes, owner_id, dni_nie, address, province, postal_code, birth_date } = parsed.data;
   const canAssign = roleHasCapability(currentUser.role, "assignLeads");
   const supabase = await createClient();
+
+  if (phone) {
+    const cleanPhone = normalizePhone(phone);
+    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).neq("id", id).maybeSingle();
+    if (dupLead) return { error: `Ya existe un lead con ese teléfono (${dupLead.full_name})`, success: false };
+    const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    if (dupStudent) return { error: `Ese teléfono pertenece a un alumno ya registrado (${dupStudent.full_name})`, success: false };
+  }
+
   const { error } = await supabase.from("leads").update({
     full_name: parsed.data.full_name,
     source: parsed.data.source,
     status: parsed.data.status,
     email: email || null,
-    phone: phone || null,
+    phone: phone ? normalizePhone(phone) : null,
     interested_course: interested_course || null,
     notes: notes || null,
     ...(canAssign ? { owner_id: owner_id || undefined } : {}),
@@ -245,6 +264,12 @@ export async function convertLeadToStudent(
 
   const { first_name, last_name, dni_nie, email, phone, address, province, postal_code, birth_date, course_id, enrollment_date, amount, notes, payment_type, cash_method, cash_amount, financer, financed_amount } = parsed.data;
 
+  if (phone) {
+    const cleanPhone = normalizePhone(phone);
+    const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    if (dupStudent) return { error: `Ya existe un alumno con ese teléfono (${dupStudent.full_name})`, success: false };
+  }
+
   // 1. Create student
   const { data: student, error: studentError } = await supabase
     .from("students")
@@ -255,7 +280,7 @@ export async function convertLeadToStudent(
       last_name,
       dni_nie,
       email,
-      phone: phone || null,
+      phone: phone ? normalizePhone(phone) : null,
       address: address || null,
       province: province || null,
       postal_code: postal_code || null,
@@ -268,7 +293,10 @@ export async function convertLeadToStudent(
     .single();
 
   if (studentError) {
-    if (studentError.code === "23505") return { error: "Ya existe un alumno con ese DNI/NIE", success: false };
+    if (studentError.code === "23505") {
+      if (studentError.message.includes("phone")) return { error: "Ya existe un alumno con ese teléfono", success: false };
+      return { error: "Ya existe un alumno con ese DNI/NIE", success: false };
+    }
     return { error: studentError.message, success: false };
   }
 

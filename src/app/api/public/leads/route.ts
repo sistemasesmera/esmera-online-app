@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizePhone } from "@/lib/utils/phone";
 
 const LEAD_SOURCES = ["web", "meta_ads", "organico"] as const;
 
@@ -20,9 +21,6 @@ function authenticate(req: NextRequest): boolean {
   return auth === key;
 }
 
-function normalizePhone(phone: string): string {
-  return phone.replace(/\s+/g, "").replace(/^(\+34|0034)/, "");
-}
 
 export async function POST(req: NextRequest) {
   if (!authenticate(req)) {

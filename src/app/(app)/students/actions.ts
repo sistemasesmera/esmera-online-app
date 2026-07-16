@@ -12,6 +12,7 @@ import {
   type UpdateStudentInput,
 } from "@/lib/domain/students/schema";
 import { createClient } from "@/lib/supabase/server";
+import { normalizePhone } from "@/lib/utils/phone";
 
 type ActionResult = { error: string | null; success: boolean };
 
@@ -28,13 +29,22 @@ export async function createStudent(input: CreateStudentInput): Promise<ActionRe
 
   const { first_name, last_name, phone, address, province, postal_code, birth_date, ...rest } = parsed.data;
   const supabase = await createClient();
+
+  if (phone) {
+    const cleanPhone = normalizePhone(phone);
+    const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    if (dupStudent) return { error: `Ya existe un alumno con ese teléfono (${dupStudent.full_name})`, success: false };
+    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    if (dupLead) return { error: `Ese teléfono está registrado como lead (${dupLead.full_name})`, success: false };
+  }
+
   const { error } = await supabase.from("students").insert({
     ...rest,
     status: "en_formacion",
     first_name,
     last_name,
     full_name: `${first_name} ${last_name}`,
-    phone: phone || null,
+    phone: phone ? normalizePhone(phone) : null,
     address: address || null,
     province: province || null,
     postal_code: postal_code || null,
@@ -44,6 +54,7 @@ export async function createStudent(input: CreateStudentInput): Promise<ActionRe
 
   if (error) {
     if (error.code === "23505") {
+      if (error.message.includes("phone")) return { error: "Ya existe un alumno con ese teléfono", success: false };
       if (error.message.includes("dni")) return { error: "Ya existe un alumno con ese DNI/NIE", success: false };
       return { error: "Error de duplicado en la base de datos: " + error.message, success: false };
     }
@@ -83,6 +94,15 @@ export async function updateStudent(id: string, input: UpdateStudentInput): Prom
   const { first_name, last_name, phone, address, province, postal_code, birth_date, assigned_to, ...rest } = parsed.data;
   const canAssignStudent = roleHasCapability(currentUser.role, "manageStudents") || currentUser.role === "jefe_comercial";
   const supabase = await createClient();
+
+  if (phone) {
+    const cleanPhone = normalizePhone(phone);
+    const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).neq("id", id).maybeSingle();
+    if (dupStudent) return { error: `Ya existe un alumno con ese teléfono (${dupStudent.full_name})`, success: false };
+    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    if (dupLead) return { error: `Ese teléfono está registrado como lead (${dupLead.full_name})`, success: false };
+  }
+
   const { error } = await supabase
     .from("students")
     .update({
@@ -90,7 +110,7 @@ export async function updateStudent(id: string, input: UpdateStudentInput): Prom
       first_name,
       last_name,
       full_name: `${first_name} ${last_name}`,
-      phone: phone || null,
+      phone: phone ? normalizePhone(phone) : null,
       address: address || null,
       province: province || null,
       postal_code: postal_code || null,
@@ -100,7 +120,10 @@ export async function updateStudent(id: string, input: UpdateStudentInput): Prom
     .eq("id", id);
 
   if (error) {
-    if (error.code === "23505") return { error: "Ya existe un alumno con ese DNI/NIE", success: false };
+    if (error.code === "23505") {
+      if (error.message.includes("phone")) return { error: "Ya existe un alumno con ese teléfono", success: false };
+      return { error: "Ya existe un alumno con ese DNI/NIE", success: false };
+    }
     return { error: error.message, success: false };
   }
 
