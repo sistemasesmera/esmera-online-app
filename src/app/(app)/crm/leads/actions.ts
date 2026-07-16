@@ -29,7 +29,7 @@ export async function createLead(input: LeadInput): Promise<ActionResult> {
 
   if (phone) {
     const cleanPhone = normalizePhone(phone);
-    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).maybeSingle();
     if (dupLead) return { error: `Ya existe un lead con ese teléfono (${dupLead.full_name})`, success: false };
     const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
     if (dupStudent) return { error: `Ese teléfono pertenece a un alumno ya registrado (${dupStudent.full_name})`, success: false };
@@ -85,7 +85,7 @@ export async function updateLead(id: string, input: LeadInput): Promise<ActionRe
 
   if (phone) {
     const cleanPhone = normalizePhone(phone);
-    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).neq("id", id).maybeSingle();
+    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).neq("id", id).maybeSingle();
     if (dupLead) return { error: `Ya existe un lead con ese teléfono (${dupLead.full_name})`, success: false };
     const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
     if (dupStudent) return { error: `Ese teléfono pertenece a un alumno ya registrado (${dupStudent.full_name})`, success: false };

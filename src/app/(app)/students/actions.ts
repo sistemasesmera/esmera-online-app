@@ -34,7 +34,7 @@ export async function createStudent(input: CreateStudentInput): Promise<ActionRe
     const cleanPhone = normalizePhone(phone);
     const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
     if (dupStudent) return { error: `Ya existe un alumno con ese teléfono (${dupStudent.full_name})`, success: false };
-    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).maybeSingle();
     if (dupLead) return { error: `Ese teléfono está registrado como lead (${dupLead.full_name})`, success: false };
   }
 
@@ -99,7 +99,7 @@ export async function updateStudent(id: string, input: UpdateStudentInput): Prom
     const cleanPhone = normalizePhone(phone);
     const { data: dupStudent } = await supabase.from("students").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).neq("id", id).maybeSingle();
     if (dupStudent) return { error: `Ya existe un alumno con ese teléfono (${dupStudent.full_name})`, success: false };
-    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle();
+    const { data: dupLead } = await supabase.from("leads").select("full_name").eq("phone", cleanPhone).maybeSingle();
     if (dupLead) return { error: `Ese teléfono está registrado como lead (${dupLead.full_name})`, success: false };
   }
 
