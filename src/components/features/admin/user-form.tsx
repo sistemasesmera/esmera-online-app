@@ -9,6 +9,7 @@ import { createUser, updateUser } from "@/app/(app)/admin/users/actions";
 import { Button } from "@/components/ui/button";
 import { SwitchField } from "@/components/shared/form-fields/switch-field";
 import { SelectField } from "@/components/shared/form-fields/select-field";
+import { PhoneField } from "@/components/shared/form-fields/phone-field";
 import { TextField } from "@/components/shared/form-fields/text-field";
 import { ROLE_LABELS, APP_ROLES } from "@/lib/domain/shared/permissions";
 import { createUserSchema, updateUserSchema, type CreateUserInput, type UpdateUserInput } from "@/lib/domain/users/schema";
@@ -77,9 +78,10 @@ export function UserForm({ user, onSuccess }: { user?: UserRow; onSuccess: () =>
           control={editForm.control}
           options={ROLE_OPTIONS}
         />
-        <TextField
+        <PhoneField
           label="Teléfono"
-          registration={editForm.register("phone")}
+          name="phone"
+          control={editForm.control}
           error={editForm.formState.errors.phone}
         />
         <SwitchField label="Cuenta activa" name="is_active" control={editForm.control} />
@@ -121,9 +123,10 @@ export function UserForm({ user, onSuccess }: { user?: UserRow; onSuccess: () =>
         control={createForm.control}
         options={ROLE_OPTIONS}
       />
-      <TextField
+      <PhoneField
         label="Teléfono (opcional)"
-        registration={createForm.register("phone")}
+        name="phone"
+        control={createForm.control}
         error={createForm.formState.errors.phone}
       />
       <TextField

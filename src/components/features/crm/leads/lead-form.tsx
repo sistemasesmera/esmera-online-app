@@ -10,6 +10,7 @@ import { ComboboxField } from "@/components/shared/form-fields/combobox-field";
 import { DatePickerField } from "@/components/shared/form-fields/date-picker-field";
 import { SelectField } from "@/components/shared/form-fields/select-field";
 import { TextareaField } from "@/components/shared/form-fields/textarea-field";
+import { PhoneField } from "@/components/shared/form-fields/phone-field";
 import { TextField } from "@/components/shared/form-fields/text-field";
 import { Button } from "@/components/ui/button";
 import type { LeadRow } from "@/lib/data/leads.repository";
@@ -86,7 +87,7 @@ export function LeadForm({ lead, users, currentUserId, canAssign = false, onSucc
       />
       <div className="grid grid-cols-2 gap-4">
         <TextField label="Email (opcional)" type="email" registration={form.register("email")} error={form.formState.errors.email} />
-        <TextField label="Teléfono" registration={form.register("phone")} error={form.formState.errors.phone} required />
+        <PhoneField label="Teléfono" name="phone" control={form.control} error={form.formState.errors.phone} required />
       </div>
       <div className="flex flex-col gap-1.5">
         <span className="text-sm font-medium">Origen</span>

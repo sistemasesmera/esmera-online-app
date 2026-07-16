@@ -54,7 +54,6 @@ export async function POST(req: NextRequest) {
     .from("leads")
     .select("id, full_name, status")
     .eq("phone", cleanPhone)
-    .is("deleted_at", null)
     .maybeSingle();
 
   if (existingLead) {

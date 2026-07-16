@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { convertLeadToStudent } from "@/app/(app)/crm/leads/actions";
 import { ComboboxField } from "@/components/shared/form-fields/combobox-field";
 import { DatePickerField } from "@/components/shared/form-fields/date-picker-field";
+import { PhoneField } from "@/components/shared/form-fields/phone-field";
 import { TextField } from "@/components/shared/form-fields/text-field";
 import { TextareaField } from "@/components/shared/form-fields/textarea-field";
 import { PaymentPlanField } from "@/components/shared/payment-plan-field";
@@ -115,10 +116,12 @@ export function LeadToStudentForm({
           />
         </div>
         <div className="grid grid-cols-2 gap-3 mt-3">
-          <TextField
+          <PhoneField
             label="Teléfono"
-            registration={form.register("phone")}
+            name="phone"
+            control={form.control}
             error={form.formState.errors.phone}
+            required
           />
           <TextField
             label="Dirección"
