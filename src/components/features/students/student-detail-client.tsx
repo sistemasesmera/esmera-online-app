@@ -9,6 +9,7 @@ import { EnrollmentForm } from "@/components/features/enrollments/enrollment-for
 import { AttachmentsTab } from "@/components/features/students/attachments-tab";
 import { StudentForm } from "@/components/features/students/student-form";
 import { ActivityFeed } from "@/components/shared/activity-feed";
+import { PhoneDisplay } from "@/components/shared/phone-display";
 import { DataTable } from "@/components/shared/data-table/data-table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -113,8 +114,7 @@ export function StudentDetailClient({
               )}
               {student.phone && (
                 <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Phone className="h-3.5 w-3.5" />
-                  {student.phone}
+                  <PhoneDisplay phone={student.phone} />
                 </span>
               )}
               <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -179,7 +179,7 @@ export function StudentDetailClient({
                   {student.phone && (
                     <div>
                       <dt className="text-xs text-muted-foreground">Teléfono</dt>
-                      <dd className="mt-0.5">{student.phone}</dd>
+                      <dd className="mt-0.5"><PhoneDisplay phone={student.phone} /></dd>
                     </div>
                   )}
                   {student.address && (

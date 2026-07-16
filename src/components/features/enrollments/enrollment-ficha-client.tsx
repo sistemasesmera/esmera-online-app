@@ -27,6 +27,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { PhoneDisplay } from "@/components/shared/phone-display";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition, useEffect } from "react";
 import { toast } from "sonner";
@@ -113,13 +114,13 @@ const CERT_STATUS_LABELS: Record<string, string> = {
   anulado: "Anulado",
 };
 
-function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="py-2 border-b border-border/50 last:border-0">
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
         {label}
       </dt>
-      <dd className="text-sm font-medium mt-0.5 text-foreground">{value || "—"}</dd>
+      <dd className="text-sm font-medium mt-0.5 text-foreground">{value ?? "—"}</dd>
     </div>
   );
 }
@@ -521,7 +522,7 @@ export function EnrollmentFichaClient({
                 <DetailRow label="Nombre completo" value={student?.full_name} />
                 <DetailRow label="DNI / NIE" value={student?.dni_nie} />
                 <DetailRow label="Email" value={student?.email} />
-                <DetailRow label="Teléfono" value={student?.phone} />
+                <DetailRow label="Teléfono" value={<PhoneDisplay phone={student?.phone} />} />
                 <DetailRow label="Dirección" value={student?.address} />
                 <DetailRow label="Provincia" value={student?.province} />
                 <DetailRow label="Código postal" value={student?.postal_code} />

@@ -10,6 +10,7 @@ import { updateLeadStatus } from "@/app/(app)/crm/leads/[id]/actions";
 import { assignLeads } from "@/app/(app)/crm/leads/actions";
 import { LeadAttachmentsTab } from "@/components/features/crm/leads/lead-attachments-tab";
 import { ActivityFeed } from "@/components/shared/activity-feed";
+import { PhoneDisplay } from "@/components/shared/phone-display";
 import { LeadForm } from "@/components/features/crm/leads/lead-form";
 import { LeadInteractionsTimeline } from "@/components/features/crm/leads/lead-interactions-timeline";
 import { LeadToStudentForm } from "@/components/features/crm/leads/lead-to-student-form";
@@ -43,11 +44,11 @@ const STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
   descartado: ["nuevo"],
 };
 
-function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="py-2 border-b border-border/50 last:border-0">
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</dt>
-      <dd className="text-sm font-medium mt-0.5 text-foreground">{value || "—"}</dd>
+      <dd className="text-sm font-medium mt-0.5 text-foreground">{value ?? "—"}</dd>
     </div>
   );
 }
@@ -241,7 +242,7 @@ export function LeadFichaClient({
             <dl className="divide-y-0">
               {/* Contacto */}
               <DetailRow label="Email" value={lead.email} />
-              <DetailRow label="Teléfono" value={lead.phone} />
+              <DetailRow label="Teléfono" value={<PhoneDisplay phone={lead.phone} />} />
 
               {/* CRM */}
               <DetailRow label="Origen" value={LEAD_SOURCE_LABELS[lead.source]} />
