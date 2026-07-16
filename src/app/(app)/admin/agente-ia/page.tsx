@@ -15,6 +15,7 @@ export default async function AgentIaPage() {
   if (!config) redirect("/dashboard");
 
   const hasApiKey = !!process.env.OPENAI_API_KEY;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.esmeraonline.com";
 
-  return <AgentIaClient config={config} hasApiKey={hasApiKey} />;
+  return <AgentIaClient config={config} hasApiKey={hasApiKey} appUrl={appUrl} />;
 }

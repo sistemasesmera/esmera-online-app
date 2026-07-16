@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { Bot, Send, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Bot, Send, Loader2, CheckCircle2, XCircle, Copy, Check } from "lucide-react";
 
 import { saveAgentConfig, type AgentConfig } from "@/app/(app)/admin/agente-ia/actions";
 import { Button } from "@/components/ui/button";
@@ -25,11 +25,16 @@ type ChatMessage = { role: "user" | "assistant"; content: string };
 export function AgentIaClient({
   config,
   hasApiKey,
+  appUrl,
 }: {
   config: AgentConfig;
   hasApiKey: boolean;
+  appUrl: string;
 }) {
   const [isPending, startTransition] = useTransition();
+  const [copied, setCopied] = useState(false);
+
+  const embedCode = `<script src="${appUrl}/api/widget.js" defer></script>`;
 
   const [isActive, setIsActive] = useState(config.is_active);
   const [model, setModel] = useState(config.model);
@@ -110,6 +115,7 @@ export function AgentIaClient({
           <TabsTrigger value="prompt">Prompt</TabsTrigger>
           <TabsTrigger value="conocimiento">Conocimiento</TabsTrigger>
           <TabsTrigger value="configuracion">Configuración</TabsTrigger>
+          <TabsTrigger value="integracion">Integración</TabsTrigger>
           <TabsTrigger value="preview">Vista previa</TabsTrigger>
         </TabsList>
 
@@ -202,6 +208,54 @@ PREGUNTAS FRECUENTES
             <p className="text-sm font-medium mb-1">Variable de entorno requerida</p>
             <code className="text-xs bg-background border rounded px-2 py-1">OPENAI_API_KEY=sk-...</code>
             <p className="text-xs text-muted-foreground mt-1">Añádela en Vercel → Settings → Environment Variables.</p>
+          </div>
+        </TabsContent>
+
+        {/* ── Integración ── */}
+        <TabsContent value="integracion" className="mt-4 flex flex-col gap-6 max-w-2xl">
+          <div className="rounded-lg border p-5 flex flex-col gap-4">
+            <div>
+              <p className="font-semibold text-sm mb-1">Código de instalación</p>
+              <p className="text-xs text-muted-foreground">
+                Pega este tag <code className="bg-muted px-1 rounded">&lt;script&gt;</code> justo antes del cierre de <code className="bg-muted px-1 rounded">&lt;/body&gt;</code> en tu web. El widget flotante aparecerá automáticamente en todas las páginas.
+              </p>
+            </div>
+            <div className="relative">
+              <pre className="bg-muted rounded-lg p-4 text-sm font-mono overflow-x-auto whitespace-pre-wrap break-all pr-12">
+                {embedCode}
+              </pre>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(embedCode);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-background border bg-background transition-colors"
+                aria-label="Copiar código"
+              >
+                {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border p-5 flex flex-col gap-3">
+            <p className="font-semibold text-sm">En Astro</p>
+            <p className="text-xs text-muted-foreground">Añade el script en tu layout principal (<code className="bg-muted px-1 rounded">src/layouts/Layout.astro</code>):</p>
+            <pre className="bg-muted rounded-lg p-4 text-xs font-mono overflow-x-auto whitespace-pre">{`<body>
+  <slot />
+  <script src="${appUrl}/api/widget.js" defer></script>
+</body>`}</pre>
+          </div>
+
+          <div className="rounded-lg border p-5 flex flex-col gap-3">
+            <p className="font-semibold text-sm">Cómo funciona</p>
+            <ul className="text-xs text-muted-foreground flex flex-col gap-1.5 list-disc list-inside">
+              <li>El script crea un botón flotante (esquina inferior derecha) en la web.</li>
+              <li>Al hacer clic se abre el chat con el mensaje de bienvenida configurado.</li>
+              <li>Las respuestas vienen del agente configurado en esta pantalla.</li>
+              <li>Si desactivas el agente desde &quot;Configuración&quot;, el botón desaparece automáticamente.</li>
+              <li>El widget se autoactualiza — no necesitas tocar el código de la web para cambiar el comportamiento.</li>
+            </ul>
           </div>
         </TabsContent>
 
