@@ -12,7 +12,7 @@ export function PhoneDisplay({ phone }: { phone?: string | null }) {
   return (
     <span className="flex items-center gap-1.5">
       {FlagComponent && (
-        <FlagComponent title={country} className="h-4 w-5 rounded-sm object-cover shrink-0" />
+        <FlagComponent title={country ?? ""} className="h-4 w-5 rounded-sm object-cover shrink-0" />
       )}
       <span>{formatted}</span>
     </span>
