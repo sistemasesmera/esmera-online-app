@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 
 export type ActivityLogRow = Database["public"]["Tables"]["activity_logs"]["Row"];
 
@@ -11,7 +11,7 @@ export type LogActivityInput = {
   entityId?: string | null;
   entityName?: string | null;
   description: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Json;
   leadId?: string | null;
   studentId?: string | null;
   enrollmentId?: string | null;
