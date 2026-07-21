@@ -4,12 +4,27 @@ import { revalidatePath } from "next/cache";
 
 import { requireRole } from "@/lib/auth/require-role";
 import { logActivity } from "@/lib/data/activity-logs.repository";
-import { leadSchema, type LeadInput } from "@/lib/domain/leads/schema";
+import { leadSchema, LEAD_SOURCES, type LeadInput } from "@/lib/domain/leads/schema";
 import { convertLeadSchema, type ConvertLeadInput } from "@/lib/domain/students/schema";
 import { CAPABILITIES, roleHasCapability } from "@/lib/domain/shared/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { normalizePhone } from "@/lib/utils/phone";
+import type { LeadSource } from "@/types/database.types";
+
+export type ImportLeadRow = {
+  full_name: string;
+  email?: string;
+  phone: string;
+  source: string;
+  interested_course?: string;
+};
+
+export type ImportLeadsResult = {
+  imported: number;
+  skipped: number;
+  errors: { row: number; reason: string }[];
+};
 
 type ActionResult = { error: string | null; success: boolean };
 
@@ -375,4 +390,88 @@ export async function convertLeadToStudent(
   revalidatePath("/enrollments");
 
   return { error: null, success: true, studentId: student.id, enrollmentId: enrollment.id };
+}
+
+export async function importLeads(rows: ImportLeadRow[]): Promise<ImportLeadsResult> {
+  if (!rows.length) return { imported: 0, skipped: 0, errors: [] };
+  if (rows.length > 1000) return { imported: 0, skipped: 0, errors: [{ row: 0, reason: "Máximo 1000 filas por importación" }] };
+
+  let currentUser;
+  try {
+    currentUser = await requireRole(CAPABILITIES.manageLeads);
+  } catch {
+    return { imported: 0, skipped: 0, errors: [{ row: 0, reason: "No autorizado" }] };
+  }
+
+  const supabase = await createClient();
+
+  // Prefetch all existing phones to avoid N+1 duplicate checks
+  const [{ data: existingLeads }, { data: existingStudents }] = await Promise.all([
+    supabase.from("leads").select("phone"),
+    supabase.from("students").select("phone").is("deleted_at", null),
+  ]);
+
+  const existingPhones = new Set<string>([
+    ...(existingLeads ?? []).map((l) => l.phone).filter((p): p is string => p !== null),
+    ...(existingStudents ?? []).map((s) => s.phone).filter((p): p is string => p !== null),
+  ]);
+
+  let imported = 0;
+  let skipped = 0;
+  const errors: { row: number; reason: string }[] = [];
+  const importedIds: string[] = [];
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+
+    if (!row.full_name?.trim()) { errors.push({ row: rowNum, reason: "Nombre requerido" }); continue; }
+    if (!row.phone?.trim()) { errors.push({ row: rowNum, reason: "Teléfono requerido" }); continue; }
+    if (!LEAD_SOURCES.includes(row.source as LeadSource)) {
+      errors.push({ row: rowNum, reason: `Origen inválido: "${row.source}"` });
+      continue;
+    }
+
+    const cleanPhone = normalizePhone(row.phone.trim());
+    if (existingPhones.has(cleanPhone)) { skipped++; continue; }
+
+    const { data: created, error } = await supabase
+      .from("leads")
+      .insert({
+        full_name: row.full_name.trim(),
+        source: row.source as LeadSource,
+        status: "nuevo" as const,
+        email: row.email?.trim() || null,
+        phone: cleanPhone,
+        interested_course: row.interested_course?.trim() || null,
+        owner_id: currentUser.id,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      if (error.code === "23505") { skipped++; }
+      else { errors.push({ row: rowNum, reason: error.message }); }
+      continue;
+    }
+
+    existingPhones.add(cleanPhone);
+    importedIds.push(created.id);
+    imported++;
+  }
+
+  if (imported > 0) {
+    await logActivity({
+      userId: currentUser.id,
+      userName: currentUser.fullName,
+      action: "lead.created",
+      entityType: "lead",
+      entityId: importedIds[0],
+      entityName: `${imported} leads importados`,
+      description: `Importación masiva: ${imported} lead${imported !== 1 ? "s" : ""} creados`,
+    });
+    revalidatePath("/crm/leads");
+  }
+
+  return { imported, skipped, errors };
 }

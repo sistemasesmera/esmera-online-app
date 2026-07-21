@@ -12,6 +12,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Target,
+  Upload,
   UserCheck,
   XCircle,
 } from "lucide-react";
@@ -24,6 +25,7 @@ import { toast } from "sonner";
 
 import { assignLeads, updateLeadStatus } from "@/app/(app)/crm/leads/actions";
 import { ConfirmStatusDialog } from "@/components/features/crm/leads/confirm-status-dialog";
+import { ImportLeadsDialog } from "@/components/features/crm/leads/import-leads-dialog";
 import { getLeadColumns } from "@/components/features/crm/leads/lead-columns";
 import { LeadForm } from "@/components/features/crm/leads/lead-form";
 import { DataTable } from "@/components/shared/data-table/data-table";
@@ -194,6 +196,7 @@ export function LeadsClient({
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [kanbanFields, setKanbanFields] = useState<KanbanField[]>(DEFAULT_KANBAN_FIELDS);
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "unassigned" | "">("");
@@ -422,10 +425,16 @@ export function LeadsClient({
             )}
 
             {canEdit && (
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-1 h-4 w-4" />
-                Nuevo lead
-              </Button>
+              <>
+                <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+                  <Upload className="mr-1 h-4 w-4" />
+                  Importar
+                </Button>
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="mr-1 h-4 w-4" />
+                  Nuevo lead
+                </Button>
+              </>
             )}
           </div>
         }
@@ -460,6 +469,11 @@ export function LeadsClient({
           canEdit={canEdit}
           visibleFields={kanbanFields}
         />
+      )}
+
+      {/* Import leads */}
+      {canEdit && (
+        <ImportLeadsDialog open={importOpen} onOpenChange={setImportOpen} />
       )}
 
       {/* Create lead */}
