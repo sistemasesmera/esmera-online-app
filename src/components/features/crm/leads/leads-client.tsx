@@ -138,7 +138,7 @@ function AssignModal({
 
   // Comerciales + Jefe Comercial + Tech
   const comerciales = users.filter((u) =>
-    ["comercial", "jefe_comercial", "tech"].includes(u.role as string) && u.is_active
+    ["comercial", "jefe_comercial"].includes(u.role as string) && u.is_active
   );
 
   return (

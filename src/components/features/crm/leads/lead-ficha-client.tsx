@@ -94,7 +94,7 @@ export function LeadFichaClient({
   const nextStatuses = STATUS_TRANSITIONS[lead.status];
 
   const comerciales = users.filter((u) =>
-    ["comercial", "jefe_comercial", "tech"].includes(u.role as string) && u.is_active
+    ["comercial", "jefe_comercial"].includes(u.role as string) && u.is_active
   );
 
   function handleStatusChange(newStatus: LeadStatus) {
