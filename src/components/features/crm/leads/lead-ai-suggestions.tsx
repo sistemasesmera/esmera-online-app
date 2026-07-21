@@ -29,6 +29,18 @@ const PRIORITY_DOT: Record<AISuggestion["priority"], string> = {
   baja:  "bg-emerald-500",
 };
 
+const PRIORITY_LABEL: Record<AISuggestion["priority"], string> = {
+  alta:  "ALTA",
+  media: "MEDIA",
+  baja:  "BAJA",
+};
+
+const PRIORITY_BADGE: Record<AISuggestion["priority"], string> = {
+  alta:  "bg-red-50 border-red-200 text-red-700",
+  media: "bg-amber-50 border-amber-200 text-amber-700",
+  baja:  "bg-emerald-50 border-emerald-200 text-emerald-700",
+};
+
 export function LeadAISuggestions() {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -128,7 +140,9 @@ export function LeadAISuggestions() {
                 href={`/crm/leads/${s.lead_id}`}
                 className="flex items-center gap-3 px-4 py-2.5 hover:bg-indigo-50/80 transition-colors group"
               >
-                <span className={`h-2 w-2 shrink-0 rounded-full ${PRIORITY_DOT[s.priority]}`} />
+                <span className={`inline-flex items-center rounded border px-1.5 py-0.5 text-[10px] font-black tracking-wide shrink-0 ${PRIORITY_BADGE[s.priority]}`}>
+                  {PRIORITY_LABEL[s.priority]}
+                </span>
                 <Icon className="h-3.5 w-3.5 shrink-0 text-indigo-400" />
                 <span className="min-w-0 text-sm">
                   <span className="font-semibold text-foreground">{s.lead_name}</span>
