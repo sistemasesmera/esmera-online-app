@@ -13,6 +13,7 @@ import { LeadAttachmentsTab } from "@/components/features/crm/leads/lead-attachm
 import { ActivityFeed } from "@/components/shared/activity-feed";
 import { PhoneDisplay } from "@/components/shared/phone-display";
 import { LeadForm } from "@/components/features/crm/leads/lead-form";
+import { LeadAISummary } from "@/components/features/crm/leads/lead-ai-summary";
 import { LeadInteractionsTimeline } from "@/components/features/crm/leads/lead-interactions-timeline";
 import { LeadToStudentForm } from "@/components/features/crm/leads/lead-to-student-form";
 import { Badge } from "@/components/ui/badge";
@@ -323,6 +324,7 @@ export function LeadFichaClient({
 
         {/* Right: Timeline + Adjuntos */}
         <div className="lg:col-span-2 flex flex-col gap-6">
+          <LeadAISummary leadId={lead.id} />
           <LeadInteractionsTimeline
             leadId={lead.id}
             initialInteractions={interactions}
