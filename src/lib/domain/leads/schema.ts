@@ -20,13 +20,13 @@ export const DISCARD_REASON_LABELS: Record<DiscardReason, string> = {
   otro:          "Otro",
 };
 
-export const LEAD_STATUSES: LeadStatus[] = ["nuevo", "contactado", "cualificado", "convertido", "descartado"];
+export const LEAD_STATUSES: LeadStatus[] = ["nuevo", "en_contacto", "oferta_enviada", "convertido", "descartado"];
 export const LEAD_SOURCES: LeadSource[] = ["web", "meta_ads", "organico", "referido", "redes_sociales", "llamada_entrante", "evento", "agente_web", "otro"];
 
 export const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   nuevo: "Nuevo",
-  contactado: "Contactado",
-  cualificado: "Cualificado",
+  en_contacto:    "En contacto",
+  oferta_enviada: "Oferta enviada",
   convertido: "Convertido",
   descartado: "Descartado",
 };
@@ -44,16 +44,16 @@ export const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
 };
 
 export const LEAD_STATUS_TRANSITIONS: Record<import("@/types/database.types").LeadStatus, import("@/types/database.types").LeadStatus[]> = {
-  nuevo:      ["contactado", "descartado"],
-  contactado: ["cualificado", "descartado"],
-  cualificado: ["descartado"],
+  nuevo:          ["en_contacto", "descartado"],
+  en_contacto:    ["oferta_enviada", "descartado"],
+  oferta_enviada: ["descartado"],
   convertido: [],
   descartado: ["nuevo"],
 };
 
 export const LEAD_TRANSITION_LABELS: Partial<Record<import("@/types/database.types").LeadStatus, string>> = {
-  contactado:  "Contactar",
-  cualificado: "Cualificar",
+  en_contacto:    "En contacto",
+  oferta_enviada: "Oferta enviada",
   descartado:  "Descartar",
   nuevo:       "Reactivar",
 };

@@ -84,7 +84,7 @@ export function LeadInteractionsTimeline({
   initialInteractions: LeadInteractionRow[];
   currentUserName: string;
   canAdd: boolean;
-  onStatusChange?: (newStatus: "contactado") => void;
+  onStatusChange?: (newStatus: "en_contacto") => void;
 }) {
   const [interactions, setInteractions] = useState(initialInteractions);
   const [activeType, setActiveType] = useState<LeadContactType>("llamada_saliente");
@@ -120,7 +120,7 @@ export function LeadInteractionsTimeline({
           setInteractions((prev) => [result.data as LeadInteractionRow, ...prev]);
         }
         if (result.statusUpdated) {
-          onStatusChange?.("contactado");
+          onStatusChange?.("en_contacto");
         }
       }
     });

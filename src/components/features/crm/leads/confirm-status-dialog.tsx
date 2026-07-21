@@ -14,8 +14,8 @@ import { LEAD_STATUS_LABELS } from "@/lib/domain/leads/schema";
 import type { LeadStatus } from "@/types/database.types";
 
 const STATUS_CLS: Partial<Record<LeadStatus, string>> = {
-  contactado:  "text-blue-700 bg-blue-50 border border-blue-200",
-  cualificado: "text-violet-700 bg-violet-50 border border-violet-200",
+  en_contacto:    "text-blue-700 bg-blue-50 border border-blue-200",
+  oferta_enviada: "text-violet-700 bg-violet-50 border border-violet-200",
   descartado:  "text-red-700 bg-red-50 border border-red-200",
   nuevo:       "text-slate-700 bg-slate-50 border border-slate-200",
 };

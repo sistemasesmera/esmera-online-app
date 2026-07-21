@@ -150,7 +150,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("enrollments").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "activa"),
     supabase.from("enrollments").select("status").is("deleted_at", null),
-    supabase.from("leads").select("*", { count: "exact", head: true }).in("status", ["nuevo", "contactado", "cualificado"]),
+    supabase.from("leads").select("*", { count: "exact", head: true }).in("status", ["nuevo", "en_contacto", "oferta_enviada"]),
     supabase.from("leads").select("status"),
     supabase.from("certificates").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "pendiente"),
     supabase.from("contracts").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "firmado").gte("signed_at", startOfMonth),
@@ -167,7 +167,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   );
   const leadDistribution = calcLeadDistribution(
     leadDistRes.data ?? [],
-    ["nuevo", "contactado", "cualificado", "convertido", "descartado"]
+    ["nuevo", "en_contacto", "oferta_enviada", "convertido", "descartado"]
   );
   const validMonthlySalesRows = ((monthlySalesRes.data ?? []) as Array<{ amount: number; signed_at: string | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
   const validSalesByUserRows = ((salesByUserRes.data ?? []) as Array<{ amount: number; users: { id: string; full_name: string } | null; enrollments?: { status: string } | null }>).filter(isMoneyEnrollment);
@@ -236,7 +236,7 @@ export async function getJefeComercialStats(): Promise<JefeComercialStats> {
     salesThisMonthRes, salesByUserRes, monthlySalesRes,
     leadDistRes, enrollmentDistRes, recentLeadsRes,
   ] = await Promise.all([
-    supabase.from("leads").select("*", { count: "exact", head: true }).in("status", ["nuevo", "contactado", "cualificado"]),
+    supabase.from("leads").select("*", { count: "exact", head: true }).in("status", ["nuevo", "en_contacto", "oferta_enviada"]),
     supabase.from("leads").select("*", { count: "exact", head: true }).is("owner_id", null),
     supabase.from("leads").select("*", { count: "exact", head: true }).eq("status", "convertido"),
     supabase.from("leads").select("*", { count: "exact", head: true }),
@@ -265,7 +265,7 @@ export async function getJefeComercialStats(): Promise<JefeComercialStats> {
     salesThisMonthTotal: salesRows.reduce((s, r) => s + r.amount, 0),
     salesByUser: groupSalesByUser(validJefeSalesByUser as unknown as SaleRow[]),
     monthlySales: buildMonthlySales(validJefeMonthlySales as Array<{ amount: number; signed_at: string | null }>, now),
-    leadDistribution: calcLeadDistribution(leadDistRes.data ?? [], ["nuevo", "contactado", "cualificado", "convertido", "descartado"]),
+    leadDistribution: calcLeadDistribution(leadDistRes.data ?? [], ["nuevo", "en_contacto", "oferta_enviada", "convertido", "descartado"]),
     enrollmentDistribution: calcEnrollmentDistribution(enrollmentDistRes.data ?? [], ["pendiente", "validada", "activa", "finalizada", "cancelada"]),
     recentLeads: (recentLeadsRes.data ?? []) as RecentLead[],
   };
@@ -293,7 +293,7 @@ export async function getComercialDashboardStats(userId: string): Promise<Comerc
     mySalesRes, myLeadDistRes, myRecentLeadsRes,
     teamSalesByUserRes,
   ] = await Promise.all([
-    supabase.from("leads").select("*", { count: "exact", head: true }).eq("owner_id", userId).in("status", ["nuevo", "contactado", "cualificado"]),
+    supabase.from("leads").select("*", { count: "exact", head: true }).eq("owner_id", userId).in("status", ["nuevo", "en_contacto", "oferta_enviada"]),
     supabase.from("students").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("assigned_to", userId).eq("status", "en_formacion"),
     supabase.from("enrollments").select("*", { count: "exact", head: true }).is("deleted_at", null).eq("status", "activa"),
     supabase.from("contracts").select("amount, enrollments!enrollment_id(status)").eq("created_by", userId).eq("status", "firmado").is("deleted_at", null).not("signed_at", "is", null).gte("signed_at", startOfMonth),
@@ -311,7 +311,7 @@ export async function getComercialDashboardStats(userId: string): Promise<Comerc
     myActiveEnrollments: myActiveEnrollmentsRes.count ?? 0,
     mySalesThisMonthCount: mySalesRows.length,
     mySalesThisMonthTotal: mySalesRows.reduce((s, r) => s + r.amount, 0),
-    myLeadDistribution: calcLeadDistribution(myLeadDistRes.data ?? [], ["nuevo", "contactado", "cualificado", "convertido", "descartado"]),
+    myLeadDistribution: calcLeadDistribution(myLeadDistRes.data ?? [], ["nuevo", "en_contacto", "oferta_enviada", "convertido", "descartado"]),
     myRecentLeads: (myRecentLeadsRes.data ?? []) as RecentLead[],
     teamSalesByUser: groupSalesByUser(validTeamSalesByUser as unknown as SaleRow[]),
   };

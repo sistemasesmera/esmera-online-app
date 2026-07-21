@@ -84,13 +84,13 @@ const STATUS_CONFIG: Record<
   { icon: React.ComponentType<{ className?: string }>; headerCls: string; countCls: string; colCls: string }
 > = {
   nuevo:      { icon: Target,        headerCls: "bg-slate-50 border-slate-200",    countCls: "bg-slate-100 text-slate-600",    colCls: "bg-slate-50/40"    },
-  contactado: { icon: MessageCircle, headerCls: "bg-blue-50 border-blue-200",      countCls: "bg-blue-100 text-blue-700",      colCls: "bg-blue-50/40"     },
-  cualificado:{ icon: Sparkles,      headerCls: "bg-violet-50 border-violet-200",  countCls: "bg-violet-100 text-violet-700",  colCls: "bg-violet-50/40"   },
+  en_contacto:    { icon: MessageCircle, headerCls: "bg-blue-50 border-blue-200",      countCls: "bg-blue-100 text-blue-700",      colCls: "bg-blue-50/40"     },
+  oferta_enviada: { icon: Sparkles,      headerCls: "bg-violet-50 border-violet-200",  countCls: "bg-violet-100 text-violet-700",  colCls: "bg-violet-50/40"   },
   convertido: { icon: CheckCircle,   headerCls: "bg-emerald-50 border-emerald-200",countCls: "bg-emerald-100 text-emerald-700",colCls: "bg-emerald-50/40"  },
   descartado: { icon: XCircle,       headerCls: "bg-red-50 border-red-200",        countCls: "bg-red-100 text-red-700",        colCls: "bg-red-50/40"      },
 };
 
-const ACTIVE_STATUSES: LeadStatus[] = ["nuevo", "contactado", "cualificado"];
+const ACTIVE_STATUSES: LeadStatus[] = ["nuevo", "en_contacto", "oferta_enviada"];
 const TERMINAL_STATUSES: LeadStatus[] = ["convertido", "descartado"];
 
 const SOURCE_ICONS: Record<LeadSource, React.ReactNode> = {

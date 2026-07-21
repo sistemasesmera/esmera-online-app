@@ -98,10 +98,10 @@ export async function addLeadInteraction(
     leadId,
   });
 
-  /* Auto-move "nuevo" → "contactado" on any interaction */
+  /* Auto-move "nuevo" → "en_contacto" on any interaction */
   let statusUpdated = false;
   if (leadData?.status === "nuevo") {
-    await supabase.from("leads").update({ status: "contactado" }).eq("id", leadId);
+    await supabase.from("leads").update({ status: "en_contacto" }).eq("id", leadId);
     await logActivity({
       userId: currentUser.id,
       userName: currentUser.fullName,
@@ -110,7 +110,7 @@ export async function addLeadInteraction(
       entityId: leadId,
       entityName: leadData.full_name,
       description: `Estado actualizado automáticamente de "Nuevo" a "Contactado"`,
-      metadata: { from: "nuevo", to: "contactado", trigger: "interaction" },
+      metadata: { from: "nuevo", to: "en_contacto", trigger: "interaction" },
       leadId,
     });
     statusUpdated = true;

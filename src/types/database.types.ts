@@ -1244,8 +1244,8 @@ export type Database = {
         | "agente_web"
       lead_status:
         | "nuevo"
-        | "contactado"
-        | "cualificado"
+        | "en_contacto"
+        | "oferta_enviada"
         | "convertido"
         | "descartado"
       notification_type:
@@ -1429,8 +1429,8 @@ export const Constants = {
       ],
       lead_status: [
         "nuevo",
-        "contactado",
-        "cualificado",
+        "en_contacto",
+        "oferta_enviada",
         "convertido",
         "descartado",
       ],

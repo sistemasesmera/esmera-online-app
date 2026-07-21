@@ -32,17 +32,17 @@ import type { LeadStatus } from "@/types/database.types";
 
 const STATUS_VARIANT: Record<LeadStatus, string> = {
   nuevo: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700",
-  contactado: "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-blue-200 dark:border-blue-800",
-  cualificado: "bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300 border-violet-200 dark:border-violet-800",
+  en_contacto:    "bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+  oferta_enviada: "bg-violet-100 text-violet-700 dark:bg-violet-900/60 dark:text-violet-300 border-violet-200 dark:border-violet-800",
   convertido: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
   descartado: "bg-red-100 text-red-700 dark:bg-red-900/60 dark:text-red-300 border-red-200 dark:border-red-800",
 };
 
 // What transitions are available from each status
 const STATUS_TRANSITIONS: Record<LeadStatus, LeadStatus[]> = {
-  nuevo: ["contactado"],
-  contactado: ["cualificado"],
-  cualificado: [],
+  nuevo:          ["en_contacto"],
+  en_contacto:    ["oferta_enviada"],
+  oferta_enviada: [],
   convertido: [],
   descartado: ["nuevo"],
 };
@@ -212,8 +212,8 @@ export function LeadFichaClient({
                 <Button
                   size="sm"
                   onClick={() => {
-                    if (lead.status !== "cualificado") {
-                      toast.error("Para hacer la matrícula el lead debe estar en estado Cualificado");
+                    if (lead.status !== "oferta_enviada") {
+                      toast.error("Para hacer la matrícula el lead debe estar en estado Oferta enviada");
                       return;
                     }
                     setConvertOpen(true);

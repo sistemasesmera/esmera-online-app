@@ -50,15 +50,15 @@ const ENROLLMENT_COLORS: Record<string, string> = {
   finalizada: "#6B7280", cancelada: "#EF4444",
 };
 const LEAD_COLORS: Record<string, string> = {
-  nuevo: "#9CA3AF", contactado: "#3B82F6", cualificado: "#8B5CF6",
+  nuevo: "#9CA3AF", en_contacto: "#3B82F6", oferta_enviada: "#8B5CF6",
   convertido: "#10B981", descartado: "#EF4444",
 };
 const LEAD_BADGE: Record<string, string> = {
-  nuevo: "bg-gray-100 text-gray-700",
-  contactado: "bg-blue-100 text-blue-700",
-  cualificado: "bg-purple-100 text-purple-700",
-  convertido: "bg-green-100 text-green-700",
-  descartado: "bg-red-100 text-red-700",
+  nuevo:          "bg-gray-100 text-gray-700",
+  en_contacto:    "bg-blue-100 text-blue-700",
+  oferta_enviada: "bg-purple-100 text-purple-700",
+  convertido:     "bg-green-100 text-green-700",
+  descartado:     "bg-red-100 text-red-700",
 };
 const ENROLLMENT_BADGE: Record<string, string> = {
   pendiente: "bg-yellow-100 text-yellow-700",
