@@ -41,14 +41,31 @@ export async function POST(
     return Response.json({ error: "invalid_token" }, { status: 401 });
   }
 
-  /* ── 2. Parsear body ── */
+  /* ── 2. Leer body raw primero para poder loguear incluso si no es JSON ── */
+  const rawBody = await req.text();
+  const supabase = createAdminClient();
+
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    body = JSON.parse(rawBody);
   } catch {
-    console.error(tag, "Invalid JSON body");
+    await supabase.from("webhook_logs").insert({
+      source: "savemyleads",
+      raw_body: rawBody,
+      payload: null,
+      result: { error: "invalid_json" },
+    });
+    console.error(tag, "Invalid JSON body:", rawBody.slice(0, 500));
     return Response.json({ error: "invalid_json" }, { status: 400 });
   }
+
+  /* Guardar payload raw en webhook_logs para diagnóstico */
+  await supabase.from("webhook_logs").insert({
+    source: "savemyleads",
+    raw_body: rawBody,
+    payload: body as import("@/types/database.types").Json,
+    result: null,
+  });
 
   console.log(tag, "Payload received:", JSON.stringify(body));
 
@@ -85,7 +102,6 @@ export async function POST(
   }
 
   const cleanPhone = normalizePhone(phone);
-  const supabase = createAdminClient();
 
   /* ── 5. Deduplicar — 200 para que SaveMyLeads no reintente ── */
   const [{ data: dupLead }, { data: dupStudent }] = await Promise.all([
