@@ -93,7 +93,7 @@ export async function POST(
 
   const interestedCourse = extract(body, [
     "interested_course", "interestedCourse",
-    "curso", "course", "formulario", "campaign_name", "ad_name",
+    "curso_interes", "curso", "course", "formulario", "campaign_name", "ad_name",
   ]);
 
   const notes = extract(body, ["notes", "notas", "message", "comments", "mensaje"]);
