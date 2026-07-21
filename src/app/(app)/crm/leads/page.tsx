@@ -17,11 +17,12 @@ export default async function LeadsPage() {
   ]);
   const canEdit = roleHasCapability(user.role, "manageLeads");
   const canAssign = roleHasCapability(user.role, "assignLeads");
+  const canUseAI = ["tech", "jefe_comercial"].includes(user.role);
 
   return (
     <div>
       <h1 className="text-2xl font-black tracking-tight mb-6">Leads</h1>
-      <LeadAISuggestions />
+      {canUseAI && <LeadAISuggestions />}
       <LeadsClient
         leads={leads}
         users={users}
