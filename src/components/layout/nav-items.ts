@@ -84,6 +84,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "Administración",
     items: [
       { label: "Usuarios", href: "/admin/users", icon: UserCog, roles: ["tech"] },
+      { label: "IA Interna", href: "/admin/ia-interna", icon: Bot, roles: ["tech", "jefe_comercial"] },
       { label: "Agente IA Web", href: "/admin/agente-ia", icon: Bot, roles: ["tech"] },
       { label: "Logs", href: "/admin/logs", icon: ClipboardList, roles: ["tech"] },
       { label: "API", href: "/api", icon: Code2, roles: ["tech"] },
