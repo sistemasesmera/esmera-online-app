@@ -70,14 +70,16 @@ export async function analyzeLeadsWithAI(): Promise<AnalyzeLeadsResult> {
     };
   });
 
-  const prompt = `Eres un asistente de ventas para Esmera School, academia de formación profesional en estética y belleza en España. El proceso de ventas es 100% telefónico.
+  /* Fetch editable prompt from DB */
+  const { data: promptRow } = await supabase
+    .from("ia_interna_prompts")
+    .select("prompt")
+    .eq("key", "lead_analysis")
+    .single();
 
-Analiza estos leads y su historial. Devuelve exactamente las 8 oportunidades más urgentes de seguimiento (o menos si no hay suficientes).
+  const basePrompt = promptRow?.prompt ?? "Analiza los leads y devuelve sugerencias de seguimiento en JSON.";
 
-PRIORIDADES:
-- alta: leads nuevos sin ningún contacto, o leads con >3 días sin respuesta que mostraron interés
-- media: leads en seguimiento activo que necesitan próximo toque
-- baja: leads contactados recientemente con próxima acción clara
+  const prompt = `${basePrompt}
 
 RESPONDE SOLO con este JSON exacto:
 {"suggestions":[{"lead_id":"uuid","lead_name":"nombre completo","message":"acción concreta y motivadora en español, máx 85 caracteres, termina con exclamación","priority":"alta|media|baja","action_type":"llamada|whatsapp|email|seguimiento"}]}

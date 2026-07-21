@@ -1131,6 +1131,33 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_interna_prompts: {
+        Row: {
+          id: string
+          key: string
+          name: string
+          prompt: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          key: string
+          name: string
+          prompt: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          key?: string
+          name?: string
+          prompt?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           created_at: string | null
