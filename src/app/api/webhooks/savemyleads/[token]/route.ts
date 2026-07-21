@@ -110,15 +110,44 @@ export async function POST(
 
   const cleanPhone = normalizePhone(phone);
 
-  /* ── 5. Deduplicar — 200 para que SaveMyLeads no reintente ── */
+  /* ── 5. Deduplicar ── */
   const [{ data: dupLead }, { data: dupStudent }] = await Promise.all([
-    supabase.from("leads").select("id").eq("phone", cleanPhone).maybeSingle(),
+    supabase.from("leads").select("id, full_name, interested_course").eq("phone", cleanPhone).maybeSingle(),
     supabase.from("students").select("id").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle(),
   ]);
 
-  if (dupLead || dupStudent) {
-    console.log(tag, "Duplicate phone — skipping silently:", cleanPhone);
-    return Response.json({ ok: true, skipped: true, reason: "duplicate" });
+  // Si ya es alumno: omitir silenciosamente
+  if (dupStudent) {
+    console.log(tag, "Phone belongs to existing student — skipping:", cleanPhone);
+    return Response.json({ ok: true, skipped: true, reason: "already_student" });
+  }
+
+  // Si ya existe como lead: registrar reentrada en activity_logs y actualizar curso si cambió
+  if (dupLead) {
+    console.log(tag, "Duplicate lead — logging reentry:", dupLead.id);
+
+    const courseChanged = interestedCourse && interestedCourse !== dupLead.interested_course;
+
+    const description = courseChanged
+      ? `Volvió a registrarse desde Meta Ads (nuevo curso de interés: ${interestedCourse})`
+      : `Volvió a registrarse desde Meta Ads${interestedCourse ? ` (curso: ${interestedCourse})` : ""}`;
+
+    await supabase.from("activity_logs").insert({
+      action:       "lead.meta_ads_reentry",
+      entity_type:  "lead",
+      entity_id:    dupLead.id,
+      entity_name:  dupLead.full_name,
+      description,
+      lead_id:      dupLead.id,
+      user_id:      null,
+      user_name:    "Meta Ads (automático)",
+    });
+
+    if (courseChanged) {
+      await supabase.from("leads").update({ interested_course: interestedCourse }).eq("id", dupLead.id);
+    }
+
+    return Response.json({ ok: true, reentry: true, lead_id: dupLead.id });
   }
 
   /* ── 6. Insertar lead ── */
