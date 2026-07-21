@@ -374,36 +374,42 @@ export type Database = {
           code: string | null
           created_at: string
           description: string | null
+          dossier_url: string | null
           duration_hours: number | null
           id: string
           is_active: boolean
           is_certificado_profesionalidad: boolean
           is_fundae: boolean
           name: string
+          temario_url: string | null
           updated_at: string
         }
         Insert: {
           code?: string | null
           created_at?: string
           description?: string | null
+          dossier_url?: string | null
           duration_hours?: number | null
           id?: string
           is_active?: boolean
           is_certificado_profesionalidad?: boolean
           is_fundae?: boolean
           name: string
+          temario_url?: string | null
           updated_at?: string
         }
         Update: {
           code?: string | null
           created_at?: string
           description?: string | null
+          dossier_url?: string | null
           duration_hours?: number | null
           id?: string
           is_active?: boolean
           is_certificado_profesionalidad?: boolean
           is_fundae?: boolean
           name?: string
+          temario_url?: string | null
           updated_at?: string
         }
         Relationships: []

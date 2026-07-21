@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
 import { createCourse, updateCourse } from "@/app/(app)/courses/actions";
+import { CourseFileUpload } from "@/components/features/courses/course-file-upload";
 import { SwitchField } from "@/components/shared/form-fields/switch-field";
 import { TextareaField } from "@/components/shared/form-fields/textarea-field";
 import { TextField } from "@/components/shared/form-fields/text-field";
@@ -86,6 +87,23 @@ export function CourseForm({ course, onSuccess }: { course?: CourseRow; onSucces
         <TextareaField label="Descripción (opcional)" registration={editForm.register("description")} error={editForm.formState.errors.description} />
         <TextField label="Duración en horas (opcional)" type="number" registration={editForm.register("duration_hours", { valueAsNumber: true })} error={editForm.formState.errors.duration_hours} />
         <SwitchField label="Curso activo" name="is_active" control={editForm.control} />
+
+        <div className="border-t pt-4 flex flex-col gap-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Documentos del curso</p>
+          <CourseFileUpload
+            courseId={course.id}
+            field="dossier_url"
+            label="Dossier"
+            currentUrl={course.dossier_url ?? null}
+          />
+          <CourseFileUpload
+            courseId={course.id}
+            field="temario_url"
+            label="Temario"
+            currentUrl={course.temario_url ?? null}
+          />
+        </div>
+
         {serverError && <p className="text-sm text-destructive">{serverError}</p>}
         <SubmitRow isPending={isPending} isEdit onCancel={onSuccess} />
       </form>

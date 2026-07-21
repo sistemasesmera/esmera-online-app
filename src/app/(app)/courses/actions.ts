@@ -7,6 +7,83 @@ import { createCourseSchema, updateCourseSchema, type CreateCourseInput, type Up
 import { CAPABILITIES } from "@/lib/domain/shared/permissions";
 import { createClient } from "@/lib/supabase/server";
 
+export type CourseDocField = "dossier_url" | "temario_url";
+
+export async function uploadCourseDoc(
+  courseId: string,
+  field: CourseDocField,
+  formData: FormData
+): Promise<{ error: string | null; url: string | null }> {
+  try {
+    await requireRole(CAPABILITIES.manageCourses);
+  } catch {
+    return { error: "No autorizado", url: null };
+  }
+
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return { error: "No se recibió archivo", url: null };
+  if (file.type !== "application/pdf") return { error: "Solo se permiten archivos PDF", url: null };
+  if (file.size > 10 * 1024 * 1024) return { error: "El archivo no puede superar 10 MB", url: null };
+
+  const supabase = await createClient();
+  const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
+  const path = `${courseId}/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("course-docs")
+    .upload(path, file, { upsert: true, contentType: "application/pdf" });
+
+  if (uploadError) return { error: uploadError.message, url: null };
+
+  const { data: urlData } = supabase.storage.from("course-docs").getPublicUrl(path);
+  const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+  const updatePayload = field === "dossier_url"
+    ? { dossier_url: publicUrl }
+    : { temario_url: publicUrl };
+
+  const { error: dbError } = await supabase
+    .from("courses")
+    .update(updatePayload)
+    .eq("id", courseId);
+
+  if (dbError) return { error: dbError.message, url: null };
+
+  revalidatePath("/courses");
+  return { error: null, url: publicUrl };
+}
+
+export async function deleteCourseDoc(
+  courseId: string,
+  field: CourseDocField
+): Promise<{ error: string | null }> {
+  try {
+    await requireRole(CAPABILITIES.manageCourses);
+  } catch {
+    return { error: "No autorizado" };
+  }
+
+  const supabase = await createClient();
+  const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
+  const path = `${courseId}/${fileName}`;
+
+  await supabase.storage.from("course-docs").remove([path]);
+
+  const clearPayload = field === "dossier_url"
+    ? { dossier_url: null }
+    : { temario_url: null };
+
+  const { error } = await supabase
+    .from("courses")
+    .update(clearPayload)
+    .eq("id", courseId);
+
+  if (error) return { error: error.message };
+
+  revalidatePath("/courses");
+  return { error: null };
+}
+
 type ActionResult = { error: string | null; success: boolean };
 
 export async function createCourse(input: CreateCourseInput): Promise<ActionResult> {
