@@ -39,6 +39,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { LeadWithJoins } from "@/lib/data/leads.repository";
 import type { UserRow } from "@/lib/data/users.repository";
 import {
+  DISCARD_REASON_LABELS,
   LEAD_SOURCE_LABELS,
   LEAD_STATUS_LABELS,
   LEAD_STATUS_TRANSITIONS,
@@ -57,7 +58,8 @@ export type KanbanField =
   | "interested_course"
   | "owner"
   | "created_at"
-  | "notes";
+  | "notes"
+  | "discard_reason";
 
 export const KANBAN_FIELD_LABELS: Record<KanbanField, string> = {
   email:             "Email",
@@ -67,10 +69,11 @@ export const KANBAN_FIELD_LABELS: Record<KanbanField, string> = {
   owner:             "Comercial asignado",
   created_at:        "Fecha de creación",
   notes:             "Notas",
+  discard_reason:    "Motivo de descarte",
 };
 
 const ALL_KANBAN_FIELDS: KanbanField[] = [
-  "email", "phone", "source", "interested_course", "owner", "created_at", "notes",
+  "email", "phone", "source", "interested_course", "owner", "created_at", "notes", "discard_reason",
 ];
 
 const DEFAULT_KANBAN_FIELDS: KanbanField[] = [
@@ -714,6 +717,13 @@ function LeadKanbanCard({
         {/* Notas */}
         {show("notes") && lead.notes && (
           <p className="text-xs text-muted-foreground/70 line-clamp-2 italic">{lead.notes}</p>
+        )}
+
+        {/* Motivo de descarte */}
+        {show("discard_reason") && lead.status === "descartado" && lead.discard_reason && (
+          <p className="text-xs font-semibold text-red-700 bg-red-50 border border-red-200 rounded px-1.5 py-0.5 w-fit">
+            {DISCARD_REASON_LABELS[lead.discard_reason as keyof typeof DISCARD_REASON_LABELS] ?? lead.discard_reason}
+          </p>
         )}
 
         {/* Acciones */}
