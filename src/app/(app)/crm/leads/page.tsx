@@ -14,7 +14,7 @@ export default async function LeadsPage() {
   const user = await requireRole(CAPABILITIES.manageLeads);
 
   const today = new Date().toISOString().slice(0, 10);
-  const hasDailyBriefing = ["comercial", "jefe_comercial"].includes(user.role);
+  const showDailyBriefing = ["comercial", "jefe_comercial"].includes(user.role);
   const canUseAI = ["tech", "jefe_comercial"].includes(user.role);
 
   const supabase = await createClient();
@@ -22,13 +22,13 @@ export default async function LeadsPage() {
   const [leads, users, briefingRow] = await Promise.all([
     listLeads(),
     listUsers(),
-    hasDailyBriefing
+    showDailyBriefing
       ? supabase
           .from("daily_briefings")
           .select("content")
           .eq("user_id", user.id)
           .eq("briefing_date", today)
-          .single()
+          .maybeSingle()
           .then((r) => r.data)
       : Promise.resolve(null),
   ]);
@@ -39,8 +39,11 @@ export default async function LeadsPage() {
   return (
     <div>
       <h1 className="text-2xl font-black tracking-tight mb-6">Leads</h1>
-      {hasDailyBriefing && (
-        <DailyBriefing initialContent={briefingRow?.content ?? null} />
+      {showDailyBriefing && (
+        <DailyBriefing
+          initialContent={briefingRow?.content ?? null}
+          userRole={user.role}
+        />
       )}
       {canUseAI && <LeadAISuggestions />}
       <LeadsClient

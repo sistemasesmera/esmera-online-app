@@ -8,7 +8,13 @@ import { Button } from "@/components/ui/button";
 
 type State = "idle" | "loading" | "done" | "error";
 
-export function DailyBriefing({ initialContent }: { initialContent: string | null }) {
+export function DailyBriefing({
+  initialContent,
+  userRole,
+}: {
+  initialContent: string | null;
+  userRole: string;
+}) {
   const [content, setContent] = useState<string | null>(initialContent);
   const [state, setState] = useState<State>(initialContent ? "done" : "idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -78,7 +84,7 @@ export function DailyBriefing({ initialContent }: { initialContent: string | nul
               Tu briefing de hoy
             </p>
             <p className="text-[11px] text-indigo-600 dark:text-indigo-400 capitalize">
-              {dateLabel}
+              {dateLabel} · {userRole === "jefe_comercial" ? "equipo completo" : "mis leads"}
             </p>
           </div>
         </div>
