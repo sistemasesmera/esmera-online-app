@@ -3,6 +3,7 @@
 import { ArrowRight, UserCheck, UserPlus, X, RotateCcw } from "lucide-react";
 
 import { ConfirmStatusDialog } from "@/components/features/crm/leads/confirm-status-dialog";
+import { DiscardLeadDialog } from "@/components/features/crm/leads/discard-lead-dialog";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -22,7 +23,8 @@ import type { CourseRow } from "@/lib/data/courses.repository";
 import type { LeadInteractionRow } from "@/lib/data/lead-interactions.repository";
 import type { LeadWithJoins } from "@/lib/data/leads.repository";
 import type { UserRow } from "@/lib/data/users.repository";
-import { LEAD_SOURCE_LABELS, LEAD_STATUS_LABELS } from "@/lib/domain/leads/schema";
+import { DISCARD_REASON_LABELS, LEAD_SOURCE_LABELS, LEAD_STATUS_LABELS } from "@/lib/domain/leads/schema";
+import type { DiscardReason } from "@/lib/domain/leads/schema";
 import type { AttachmentWithUrl } from "@/lib/data/attachments.shared";
 import type { ActivityLogRow } from "@/lib/data/activity-logs.repository";
 import type { LeadStatus } from "@/types/database.types";
@@ -82,6 +84,7 @@ export function LeadFichaClient({
   const [editOpen, setEditOpen] = useState(false);
   const [convertOpen, setConvertOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<LeadStatus | null>(null);
   const [isPendingStatus, startStatusTransition] = useTransition();
   const [isPendingAssign, startAssignTransition] = useTransition();
@@ -180,7 +183,7 @@ export function LeadFichaClient({
                   size="sm"
                   variant="outline"
                   className="h-7 px-2.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10"
-                  onClick={() => setPendingStatus("descartado")}
+                  onClick={() => setDiscardOpen(true)}
                   disabled={isPendingStatus}
                 >
                   <X className="mr-1 h-3 w-3" />
@@ -270,6 +273,19 @@ export function LeadFichaClient({
                 </div>
               )}
 
+              {/* Motivo de descarte */}
+              {lead.status === "descartado" && lead.discard_reason && (
+                <div className="py-2 border-b border-border/50 last:border-0">
+                  <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Motivo de descarte</dt>
+                  <dd className="text-sm mt-0.5 font-medium text-red-700">
+                    {DISCARD_REASON_LABELS[lead.discard_reason as DiscardReason] ?? lead.discard_reason}
+                  </dd>
+                  {lead.discard_notes && (
+                    <dd className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap">{lead.discard_notes}</dd>
+                  )}
+                </div>
+              )}
+
               {/* Datos para contrato — siempre visibles */}
               <div className="pt-3 pb-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60">
@@ -312,6 +328,7 @@ export function LeadFichaClient({
             initialInteractions={interactions}
             currentUserName={currentUserName}
             canAdd={canEdit && lead.status !== "convertido" && lead.status !== "descartado"}
+            onStatusChange={(s) => setLead((prev) => ({ ...prev, status: s }))}
           />
           <Card className="card-shadow border">
             <CardHeader className="pb-3 border-b">
@@ -338,7 +355,19 @@ export function LeadFichaClient({
         </div>
       </div>
 
-      {/* Confirm status change */}
+      {/* Discard lead with reason */}
+      <DiscardLeadDialog
+        open={discardOpen}
+        leadId={lead.id}
+        leadName={lead.full_name}
+        onSuccess={() => {
+          setLead((prev) => ({ ...prev, status: "descartado" }));
+          setDiscardOpen(false);
+        }}
+        onCancel={() => setDiscardOpen(false)}
+      />
+
+      {/* Confirm other status changes */}
       <ConfirmStatusDialog
         open={pendingStatus !== null}
         fromStatus={lead.status}

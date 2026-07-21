@@ -568,6 +568,8 @@ export type Database = {
           birth_date: string | null
           converted_to_student_id: string | null
           created_at: string
+          discard_notes: string | null
+          discard_reason: string | null
           dni_nie: string | null
           email: string | null
           full_name: string
@@ -587,6 +589,8 @@ export type Database = {
           birth_date?: string | null
           converted_to_student_id?: string | null
           created_at?: string
+          discard_notes?: string | null
+          discard_reason?: string | null
           dni_nie?: string | null
           email?: string | null
           full_name: string
@@ -606,6 +610,8 @@ export type Database = {
           birth_date?: string | null
           converted_to_student_id?: string | null
           created_at?: string
+          discard_notes?: string | null
+          discard_reason?: string | null
           dni_nie?: string | null
           email?: string | null
           full_name?: string
@@ -1433,4 +1439,4 @@ export type ContactType = Database["public"]["Enums"]["contact_type"]
 export type FollowupStudentStatus = Database["public"]["Enums"]["followup_student_status"]
 export type CertificateStatus = Database["public"]["Enums"]["certificate_status"]
 export type NotificationType = Database["public"]["Enums"]["notification_type"]
-export type LeadContactType = "llamada_saliente" | "llamada_entrante" | "email" | "whatsapp" | "reunion" | "otro"
+export type LeadContactType = "llamada_saliente" | "llamada_entrante" | "no_contesta" | "email" | "whatsapp" | "reunion" | "otro"

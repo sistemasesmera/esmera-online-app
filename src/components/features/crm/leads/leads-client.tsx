@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { assignLeads, updateLeadStatus } from "@/app/(app)/crm/leads/actions";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmStatusDialog } from "@/components/features/crm/leads/confirm-status-dialog";
+import { DiscardLeadDialog } from "@/components/features/crm/leads/discard-lead-dialog";
 import { ImportLeadsDialog } from "@/components/features/crm/leads/import-leads-dialog";
 import { getLeadColumns } from "@/components/features/crm/leads/lead-columns";
 import { LeadForm } from "@/components/features/crm/leads/lead-form";
@@ -637,11 +638,16 @@ function LeadKanbanCard({
 }) {
   const [isPending, startTransition] = useTransition();
   const [pendingTransition, setPendingTransition] = useState<LeadStatus | null>(null);
+  const [discardOpen, setDiscardOpen] = useState(false);
   const nextStatuses = LEAD_STATUS_TRANSITIONS[lead.status];
 
   const show = (f: KanbanField) => visibleFields.includes(f);
 
   function handleTransition(next: LeadStatus) {
+    if (next === "descartado") {
+      setDiscardOpen(true);
+      return;
+    }
     startTransition(async () => {
       const result = await updateLeadStatus(lead.id, next);
       if (result.error) {
@@ -722,7 +728,7 @@ function LeadKanbanCard({
             <button
               key={next}
               disabled={isPending}
-              onClick={() => setPendingTransition(next)}
+              onClick={() => handleTransition(next)}
               className={`text-[11px] font-semibold rounded px-2 py-0.5 ring-1 transition-colors cursor-pointer disabled:opacity-50 ${
                 next === "descartado"
                   ? "text-red-700 bg-red-50 ring-red-200 hover:bg-red-100"
@@ -745,6 +751,14 @@ function LeadKanbanCard({
         isPending={isPending}
         onConfirm={() => { if (pendingTransition) handleTransition(pendingTransition); }}
         onCancel={() => setPendingTransition(null)}
+      />
+
+      <DiscardLeadDialog
+        open={discardOpen}
+        leadId={lead.id}
+        leadName={lead.full_name}
+        onSuccess={() => setDiscardOpen(false)}
+        onCancel={() => setDiscardOpen(false)}
       />
     </>
   );

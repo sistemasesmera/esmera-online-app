@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import type { LeadInteractionRow } from "@/lib/data/lead-interactions.repository";
 
 const schema = z.object({
-  contact_type: z.enum(["llamada_saliente", "llamada_entrante", "email", "whatsapp", "reunion", "otro"] as const),
+  contact_type: z.enum(["llamada_saliente", "llamada_entrante", "no_contesta", "email", "whatsapp", "reunion", "otro"] as const),
   notes: z.string().min(1, "Requerido"),
   followup_date: z.string().min(1, "Requerida"),
   next_followup_date: z.string().optional(),
