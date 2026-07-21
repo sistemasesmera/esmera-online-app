@@ -17,6 +17,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 
 import { usePersistedPageSize } from "@/hooks/use-persisted-page-size";
@@ -24,6 +25,7 @@ import type { RowSelectionState } from "@tanstack/react-table";
 import { toast } from "sonner";
 
 import { assignLeads, updateLeadStatus } from "@/app/(app)/crm/leads/actions";
+import { createClient } from "@/lib/supabase/client";
 import { ConfirmStatusDialog } from "@/components/features/crm/leads/confirm-status-dialog";
 import { ImportLeadsDialog } from "@/components/features/crm/leads/import-leads-dialog";
 import { getLeadColumns } from "@/components/features/crm/leads/lead-columns";
@@ -193,6 +195,8 @@ export function LeadsClient({
   canEdit: boolean;
   canAssign: boolean;
 }) {
+  const router = useRouter();
+
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [kanbanFields, setKanbanFields] = useState<KanbanField[]>(DEFAULT_KANBAN_FIELDS);
   const [createOpen, setCreateOpen] = useState(false);
@@ -206,6 +210,17 @@ export function LeadsClient({
   const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:leads");
 
   useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("leads-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "leads" }, () => {
+        router.refresh();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [router]);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY) as ViewMode | null;
