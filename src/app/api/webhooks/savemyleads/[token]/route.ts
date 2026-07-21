@@ -41,25 +41,32 @@ export async function POST(
     return Response.json({ error: "invalid_token" }, { status: 401 });
   }
 
-  /* ── 2. Leer body raw primero para poder loguear incluso si no es JSON ── */
+  /* ── 2. Parsear body — acepta JSON y form-urlencoded ── */
   const rawBody = await req.text();
   const supabase = createAdminClient();
 
   let body: Record<string, unknown>;
-  try {
-    body = JSON.parse(rawBody);
-  } catch {
-    await supabase.from("webhook_logs").insert({
-      source: "savemyleads",
-      raw_body: rawBody,
-      payload: null,
-      result: { error: "invalid_json" },
-    });
-    console.error(tag, "Invalid JSON body:", rawBody.slice(0, 500));
-    return Response.json({ error: "invalid_json" }, { status: 400 });
+  const contentType = req.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/x-www-form-urlencoded")) {
+    const params = new URLSearchParams(rawBody);
+    body = Object.fromEntries(params.entries());
+  } else {
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      await supabase.from("webhook_logs").insert({
+        source: "savemyleads",
+        raw_body: rawBody,
+        payload: null,
+        result: { error: "invalid_json" },
+      });
+      console.error(tag, "Invalid body:", rawBody.slice(0, 500));
+      return Response.json({ error: "invalid_body" }, { status: 400 });
+    }
   }
 
-  /* Guardar payload raw en webhook_logs para diagnóstico */
+  /* Guardar payload en webhook_logs para diagnóstico */
   await supabase.from("webhook_logs").insert({
     source: "savemyleads",
     raw_body: rawBody,
