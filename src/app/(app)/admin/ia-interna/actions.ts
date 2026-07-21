@@ -10,6 +10,7 @@ export type IAPromptRow = {
   key: string;
   name: string;
   prompt: string;
+  is_active: boolean;
   updated_at: string | null;
 };
 
@@ -17,7 +18,7 @@ export async function listIAPrompts(): Promise<IAPromptRow[]> {
   const supabase = await createClient();
   const { data } = await supabase
     .from("ia_interna_prompts")
-    .select("id, key, name, prompt, updated_at")
+    .select("id, key, name, prompt, is_active, updated_at")
     .order("name");
   return (data ?? []) as IAPromptRow[];
 }

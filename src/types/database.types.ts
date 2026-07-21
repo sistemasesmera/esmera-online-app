@@ -1137,6 +1137,7 @@ export type Database = {
           key: string
           name: string
           prompt: string
+          is_active: boolean
           updated_at: string | null
           updated_by: string | null
         }
@@ -1145,6 +1146,7 @@ export type Database = {
           key: string
           name: string
           prompt: string
+          is_active?: boolean
           updated_at?: string | null
           updated_by?: string | null
         }
@@ -1153,6 +1155,7 @@ export type Database = {
           key?: string
           name?: string
           prompt?: string
+          is_active?: boolean
           updated_at?: string | null
           updated_by?: string | null
         }

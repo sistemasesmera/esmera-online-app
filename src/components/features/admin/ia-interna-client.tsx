@@ -1,6 +1,6 @@
 "use client";
 
-import { Save, Sparkles } from "lucide-react";
+import { Clock, Save, Sparkles } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -8,14 +8,43 @@ import { saveIAPrompt, type IAPromptRow } from "@/app/(app)/admin/ia-interna/act
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const PROCESS_ICON: Record<string, React.ElementType> = {};
-
 export function IAInternaClient({ prompts }: { prompts: IAPromptRow[] }) {
+  const active = prompts.filter((p) => p.is_active);
+  const upcoming = prompts.filter((p) => !p.is_active);
+
   return (
-    <div className="space-y-6">
-      {prompts.map((p) => (
-        <PromptEditor key={p.key} prompt={p} />
-      ))}
+    <div className="space-y-8">
+      {/* Active processes */}
+      <div className="space-y-6">
+        {active.map((p) => (
+          <PromptEditor key={p.key} prompt={p} />
+        ))}
+      </div>
+
+      {/* Upcoming processes */}
+      {upcoming.length > 0 && (
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3">
+            Próximamente
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {upcoming.map((p) => (
+              <div
+                key={p.key}
+                className="flex items-center gap-3 rounded-xl border border-dashed border-border/60 px-4 py-3.5 opacity-60"
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted border border-border">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">{p.name}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">En desarrollo</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
