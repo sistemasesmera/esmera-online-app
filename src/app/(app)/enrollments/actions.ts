@@ -301,6 +301,55 @@ export async function activateEnrollment(
   return { error: null, success: true };
 }
 
+export async function updateEnrollmentDates(
+  id: string,
+  data: { start_date: string | null; end_date: string | null; duration_months: number | null }
+): Promise<ActionResult> {
+  let currentUser;
+  try {
+    currentUser = await requireRole(CAPABILITIES.manageEnrollments);
+  } catch {
+    return { error: "No autorizado", success: false };
+  }
+
+  const supabase = await createClient();
+  const { data: current } = await supabase
+    .from("enrollments")
+    .select("student_id")
+    .eq("id", id)
+    .single();
+
+  if (!current) return { error: "Matrícula no encontrada", success: false };
+
+  const { error } = await supabase
+    .from("enrollments")
+    .update({
+      start_date: data.start_date || null,
+      end_date: data.end_date || null,
+      duration_months: data.duration_months ?? null,
+    })
+    .eq("id", id);
+
+  if (error) return { error: error.message, success: false };
+
+  await logActivity({
+    userId: currentUser.id,
+    userName: currentUser.fullName,
+    action: "enrollment.dates_updated",
+    entityType: "enrollment",
+    entityId: id,
+    description: "Fechas de la matrícula actualizadas",
+    studentId: current.student_id,
+    enrollmentId: id,
+    metadata: data,
+  });
+
+  revalidatePath("/enrollments");
+  revalidatePath(`/enrollments/${id}`);
+  revalidatePath(`/students/${current.student_id}`);
+  return { error: null, success: true };
+}
+
 export async function deleteSignedContract(
   enrollmentId: string,
   filePath: string | null

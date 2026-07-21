@@ -36,6 +36,7 @@ import {
   activateEnrollment,
   assignTutor,
   updateEnrollmentStatus,
+  updateEnrollmentDates,
 } from "@/app/(app)/enrollments/actions";
 import { deleteFollowup } from "@/app/(app)/tutoring/actions";
 import { attachCertificateDocument, createCertificate } from "@/app/(app)/certificates/actions";
@@ -271,6 +272,10 @@ export function EnrollmentFichaClient({
   // Dialog states
   const [activateOpen, setActivateOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
+  const [editDatesOpen, setEditDatesOpen] = useState(false);
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+  const [editDurationMonths, setEditDurationMonths] = useState("");
   const [followupOpen, setFollowupOpen] = useState(false);
   const [editingFollowup, setEditingFollowup] = useState<FollowupForStudent | null>(null);
   const [deletingFollowupId, setDeletingFollowupId] = useState<string | null>(null);
@@ -343,6 +348,25 @@ export function EnrollmentFichaClient({
       const result = await updateEnrollmentStatus(enrollment.id, next);
       if (result.error) toast.error(result.error);
       else toast.success(`Matrícula: ${ENROLLMENT_STATUS_LABELS[next]}`);
+    });
+  }
+
+  function openEditDates() {
+    setEditStartDate(enrollment.start_date ?? "");
+    setEditEndDate(enrollment.end_date ?? "");
+    setEditDurationMonths(enrollment.duration_months != null ? String(enrollment.duration_months) : "");
+    setEditDatesOpen(true);
+  }
+
+  function handleSaveDates() {
+    startTransition(async () => {
+      const result = await updateEnrollmentDates(enrollment.id, {
+        start_date: editStartDate || null,
+        end_date: editEndDate || null,
+        duration_months: editDurationMonths ? parseInt(editDurationMonths, 10) : null,
+      });
+      if (result.error) toast.error(result.error);
+      else { toast.success("Fechas actualizadas"); setEditDatesOpen(false); }
     });
   }
 
@@ -885,7 +909,19 @@ export function EnrollmentFichaClient({
           {/* Datos de la matrícula */}
           <Card className="border card-shadow">
             <CardHeader className="pb-3 border-b">
-              <CardTitle className="text-sm font-semibold">Datos de la matrícula</CardTitle>
+              <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                Datos de la matrícula
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={openEditDates}
+                    className="text-muted-foreground hover:text-foreground transition-colors p-0.5"
+                    title="Editar fechas"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8">
@@ -1321,6 +1357,55 @@ export function EnrollmentFichaClient({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* ── Edit dates ── */}
+      <Dialog open={editDatesOpen} onOpenChange={(v) => !v && setEditDatesOpen(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Editar fechas de la matrícula</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4 py-2">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-start-date">Fecha de inicio</Label>
+              <Input
+                id="edit-start-date"
+                type="date"
+                value={editStartDate}
+                onChange={(e) => setEditStartDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-end-date">Fecha de fin</Label>
+              <Input
+                id="edit-end-date"
+                type="date"
+                value={editEndDate}
+                onChange={(e) => setEditEndDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="edit-duration">Duración (meses)</Label>
+              <Input
+                id="edit-duration"
+                type="number"
+                min={1}
+                max={60}
+                placeholder="Ej: 6"
+                value={editDurationMonths}
+                onChange={(e) => setEditDurationMonths(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDatesOpen(false)} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveDates} disabled={isPending}>
+              {isPending ? "Guardando…" : "Guardar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ── Confirm destructive transition (finalizada / cancelada) ── */}
       <Dialog open={!!confirmTransition} onOpenChange={(open) => { if (!open) setConfirmTransition(null); }}>

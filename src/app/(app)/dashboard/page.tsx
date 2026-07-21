@@ -8,6 +8,7 @@ import {
   FileCheck,
   FolderCheck,
   GraduationCap,
+  Monitor,
   Target,
   TrendingUp,
   UserMinus,
@@ -448,9 +449,20 @@ async function JefeComercialDashboard({ name, monthName }: { name: string; month
 
   return (
     <div className="space-y-8 max-w-[1400px]">
-      <div>
-        <h1 className="text-3xl font-black tracking-tight">Hola, {name}</h1>
-        <p className="text-muted-foreground mt-1">Jefe Comercial · {monthName}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight">Hola, {name}</h1>
+          <p className="text-muted-foreground mt-1">Jefe Comercial · {monthName}</p>
+        </div>
+        <Link
+          href="/tv"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm hover:bg-muted transition-colors shrink-0"
+        >
+          <Monitor className="h-4 w-4" />
+          Vista TV
+        </Link>
       </div>
 
       <section>
@@ -629,9 +641,20 @@ async function TechDashboard({ name, monthName }: { name: string; monthName: str
 
   return (
     <div className="space-y-8 max-w-[1400px]">
-      <div>
-        <h1 className="text-3xl font-black tracking-tight">Hola, {name}</h1>
-        <p className="text-muted-foreground mt-1">Tech · {monthName}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight">Hola, {name}</h1>
+          <p className="text-muted-foreground mt-1">Tech · {monthName}</p>
+        </div>
+        <Link
+          href="/tv"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground shadow-sm hover:bg-muted transition-colors shrink-0"
+        >
+          <Monitor className="h-4 w-4" />
+          Vista TV
+        </Link>
       </div>
 
       <section>

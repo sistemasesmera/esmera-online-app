@@ -413,6 +413,63 @@ export type TutorStats = {
   myActiveEnrollmentsList: TutorEnrollmentItem[];
 };
 
+// ─── TV Dashboard ────────────────────────────────────────────────────────────
+
+export type TvComercialRow = {
+  userId: string;
+  userName: string;
+  todayCount: number;
+  todayAmount: number;
+  monthCount: number;
+  monthAmount: number;
+};
+
+export type TvStats = {
+  comerciales: TvComercialRow[];
+};
+
+export async function getTvStats(): Promise<TvStats> {
+  const supabase = await createClient();
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const [comercialesRes, todayContractsRes, monthContractsRes] = await Promise.all([
+    supabase.from("users").select("id, full_name").eq("role", "comercial").order("full_name"),
+    supabase.from("contracts").select("amount, created_by, enrollments!enrollment_id(status)").is("deleted_at", null).gte("created_at", todayStart),
+    supabase.from("contracts").select("amount, created_by, enrollments!enrollment_id(status)").is("deleted_at", null).gte("created_at", monthStart),
+  ]);
+
+  const comerciales = comercialesRes.data ?? [];
+
+  type ContractRow = { amount: number; created_by: string; enrollments?: { status: string } | null };
+
+  function groupByUser(rows: ContractRow[]) {
+    return rows.filter(isMoneyEnrollment).reduce<Record<string, { count: number; total: number }>>((acc, r) => {
+      if (!acc[r.created_by]) acc[r.created_by] = { count: 0, total: 0 };
+      acc[r.created_by].count++;
+      acc[r.created_by].total += r.amount;
+      return acc;
+    }, {});
+  }
+
+  const todayByUser = groupByUser((todayContractsRes.data ?? []) as ContractRow[]);
+  const monthByUser = groupByUser((monthContractsRes.data ?? []) as ContractRow[]);
+
+  const rows: TvComercialRow[] = comerciales.map((u) => ({
+    userId: u.id,
+    userName: u.full_name,
+    todayCount: todayByUser[u.id]?.count ?? 0,
+    todayAmount: todayByUser[u.id]?.total ?? 0,
+    monthCount: monthByUser[u.id]?.count ?? 0,
+    monthAmount: monthByUser[u.id]?.total ?? 0,
+  }));
+
+  rows.sort((a, b) => b.monthAmount - a.monthAmount);
+
+  return { comerciales: rows };
+}
+
 export async function getTutorDashboardStats(userId: string): Promise<TutorStats | null> {
   const supabase = await createClient();
 
