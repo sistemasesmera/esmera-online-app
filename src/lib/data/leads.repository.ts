@@ -21,7 +21,7 @@ export async function listLeads(): Promise<LeadWithJoins[]> {
     supabase
       .from("lead_interactions")
       .select("lead_id")
-      .eq("contact_type", "nota_interna"),
+      .filter("contact_type", "eq", "nota_interna"),
   ]);
   if (error) throw new Error(error.message);
 
