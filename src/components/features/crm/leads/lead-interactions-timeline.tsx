@@ -204,6 +204,7 @@ export function LeadInteractionsTimeline({
 
         <div className="space-y-4">
           {interactions.map((item) => {
+            const isSystem = (item.contact_type as string) === "nota_interna";
             const type = item.contact_type as LeadContactType;
             const Icon = CONTACT_TYPE_ICONS[type] ?? StickyNote;
             const colors = CONTACT_TYPE_COLORS[type] ?? "bg-gray-100 text-gray-600";
@@ -215,13 +216,13 @@ export function LeadInteractionsTimeline({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm font-medium">
-                      {CONTACT_TYPE_LABELS[type] ?? type}
+                      {isSystem ? "Nota" : (CONTACT_TYPE_LABELS[type] ?? type)}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {formatDateTime(item.created_at)}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      · {item.users?.full_name ?? currentUserName}
+                      · {isSystem ? "Sistema" : (item.users?.full_name ?? currentUserName)}
                     </span>
                   </div>
                   {item.notes && item.notes !== "No contestó" && (
