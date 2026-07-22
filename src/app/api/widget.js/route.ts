@@ -139,6 +139,26 @@ export async function GET(req: NextRequest) {
     '</div>';
   document.body.appendChild(root);
 
+  /* ── Persistence (localStorage) ── */
+  var LS_KEY = 'ec-history';
+  var LS_MAX_AGE = 24 * 60 * 60 * 1000; // 24 h
+
+  function loadHistory() {
+    try {
+      var raw = localStorage.getItem(LS_KEY);
+      if (!raw) return null;
+      var saved = JSON.parse(raw);
+      if (Date.now() - saved.ts > LS_MAX_AGE) { localStorage.removeItem(LS_KEY); return null; }
+      return saved;
+    } catch(e) { return null; }
+  }
+
+  function saveHistory() {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify({ ts: Date.now(), messages: messages }));
+    } catch(e) {}
+  }
+
   /* ── State ── */
   var messages = [];
   var isOpen = false;
@@ -151,14 +171,24 @@ export async function GET(req: NextRequest) {
   var input   = document.getElementById('esmera-chat-input');
   var sendBtn = document.getElementById('esmera-chat-send');
 
-  function addMessage(role, content) {
+  function addMessage(role, content, skipSave) {
     messages.push({ role: role, content: content });
     var el = document.createElement('div');
     el.className = 'ec-msg ' + (role === 'user' ? 'ec-user' : 'ec-bot');
     el.textContent = content;
     msgList.appendChild(el);
     msgList.scrollTop = msgList.scrollHeight;
+    if (!skipSave) saveHistory();
   }
+
+  /* ── Restore history on load ── */
+  (function() {
+    var saved = loadHistory();
+    if (saved && saved.messages && saved.messages.length > 0) {
+      saved.messages.forEach(function(m) { addMessage(m.role, m.content, true); });
+      saveHistory();
+    }
+  })();
 
   function showTyping() {
     var el = document.createElement('div');
@@ -214,7 +244,7 @@ export async function GET(req: NextRequest) {
     isOpen = !isOpen;
     if (isOpen) {
       box.classList.add('ec-open');
-      if (messages.length === 0) addMessage('assistant', WELCOME);
+      if (messages.length === 0) addMessage('assistant', WELCOME, false);
       input.focus();
     } else {
       box.classList.remove('ec-open');
