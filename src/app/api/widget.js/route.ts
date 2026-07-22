@@ -191,6 +191,13 @@ export async function GET(req: NextRequest) {
     .then(function(data) {
       hideTyping();
       addMessage('assistant', data.message || 'Lo siento, ha ocurrido un error.');
+      if (data.lead_captured) {
+        var badge = document.createElement('div');
+        badge.style.cssText = 'text-align:center;font-size:11px;color:#16a34a;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:6px 10px;margin-top:2px;';
+        badge.textContent = '✓ Datos registrados — te contactaremos pronto';
+        msgList.appendChild(badge);
+        msgList.scrollTop = msgList.scrollHeight;
+      }
     })
     .catch(function() {
       hideTyping();

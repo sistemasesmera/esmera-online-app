@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizePhone } from "@/lib/utils/phone";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -14,11 +15,33 @@ export async function OPTIONS() {
 function authenticate(req: NextRequest): boolean {
   const key = process.env.PUBLIC_API_KEY;
   const isPreview = req.headers.get("x-api-key") === "preview-internal";
-  if (isPreview) return true; // internal preview from admin panel
+  if (isPreview) return true;
   if (!key) return false;
   const auth = req.headers.get("x-api-key") ?? req.headers.get("authorization")?.replace("Bearer ", "");
   return auth === key;
 }
+
+const CAPTURE_LEAD_TOOL = {
+  type: "function" as const,
+  function: {
+    name: "capture_lead",
+    description:
+      "Llama a esta función en cuanto el usuario haya proporcionado su nombre completo y número de teléfono para que un comercial le contacte.",
+    parameters: {
+      type: "object",
+      properties: {
+        full_name:         { type: "string", description: "Nombre completo del usuario" },
+        phone:             { type: "string", description: "Número de teléfono del usuario" },
+        interested_course: { type: "string", description: "Curso en el que está interesado, si lo mencionó" },
+        email:             { type: "string", description: "Email del usuario, si lo mencionó" },
+      },
+      required: ["full_name", "phone"],
+    },
+  },
+};
+
+const LEAD_CAPTURE_INSTRUCTION =
+  "\n\nCUANDO EL USUARIO MUESTRE INTERÉS: pídele su nombre completo y teléfono para que un comercial de Esmera le contacte sin compromiso. En cuanto los tengas, llama a la función capture_lead. Tras hacerlo, confirma que el equipo se pondrá en contacto pronto.";
 
 export async function POST(req: NextRequest) {
   if (!authenticate(req)) {
@@ -42,6 +65,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "messages es requerido" }, { status: 422, headers: CORS_HEADERS });
   }
 
+  const isPreview = body.preview === true;
+
   const supabase = createAdminClient();
   const { data: config } = await supabase.from("agent_config").select("*").single();
 
@@ -49,8 +74,6 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Agente no configurado" }, { status: 503, headers: CORS_HEADERS });
   }
 
-  // Allow preview to override config without saving
-  const isPreview = body.preview === true;
   const overrides = (body.overrides ?? {}) as Partial<typeof config>;
   const effectiveConfig = isPreview ? { ...config, ...overrides } : config;
 
@@ -61,37 +84,107 @@ export async function POST(req: NextRequest) {
   const systemParts: string[] = [];
   if (effectiveConfig.system_prompt) systemParts.push(effectiveConfig.system_prompt);
   if (effectiveConfig.knowledge) systemParts.push(`\n\nCONOCIMIENTO BASE:\n${effectiveConfig.knowledge}`);
+  if (!isPreview) systemParts.push(LEAD_CAPTURE_INSTRUCTION);
   const systemPrompt = systemParts.join("") || "Eres un asistente virtual útil y amable.";
 
   const openaiMessages = [
     { role: "system", content: systemPrompt },
-    ...messages.slice(-20), // keep last 20 messages to avoid token overflow
+    ...messages.slice(-20),
   ];
 
   try {
+    const reqBody: Record<string, unknown> = {
+      model: effectiveConfig.model ?? "gpt-4o-mini",
+      messages: openaiMessages,
+      max_tokens: 500,
+      temperature: 0.7,
+      tools: [CAPTURE_LEAD_TOOL],
+      tool_choice: "auto",
+    };
+
     const res = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        model: effectiveConfig.model ?? "gpt-4o-mini",
-        messages: openaiMessages,
-        max_tokens: 500,
-        temperature: 0.7,
-      }),
+      body: JSON.stringify(reqBody),
     });
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      return Response.json({ error: (err as { error?: { message?: string } }).error?.message ?? "Error de OpenAI" }, { status: 502, headers: CORS_HEADERS });
+      return Response.json(
+        { error: (err as { error?: { message?: string } }).error?.message ?? "Error de OpenAI" },
+        { status: 502, headers: CORS_HEADERS }
+      );
     }
 
-    const data = await res.json() as { choices: { message: { content: string } }[] };
-    const message = data.choices[0]?.message?.content ?? "";
+    const data = await res.json() as {
+      choices: {
+        message: {
+          content: string | null;
+          tool_calls?: { function: { name: string; arguments: string } }[];
+        };
+      }[];
+    };
 
-    return Response.json({ message }, { status: 200, headers: CORS_HEADERS });
+    const choice = data.choices[0]?.message;
+    let replyText = choice?.content ?? "";
+    let leadCaptured = false;
+
+    // Handle capture_lead function call
+    const call = choice?.tool_calls?.find((t) => t.function.name === "capture_lead");
+    if (call && !isPreview) {
+      try {
+        const args = JSON.parse(call.function.arguments) as {
+          full_name: string;
+          phone: string;
+          interested_course?: string;
+          email?: string;
+        };
+
+        const cleanPhone = normalizePhone(args.phone);
+
+        const [{ data: existingLead }, { data: existingStudent }] = await Promise.all([
+          supabase.from("leads").select("id, status").eq("phone", cleanPhone).maybeSingle(),
+          supabase.from("students").select("id").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle(),
+        ]);
+
+        if (!existingStudent) {
+          if (existingLead) {
+            if (existingLead.status === "descartado") {
+              await supabase.from("leads").update({
+                full_name: args.full_name,
+                status: "nuevo",
+                interested_course: args.interested_course ?? null,
+                updated_at: new Date().toISOString(),
+              }).eq("id", existingLead.id);
+            }
+            // Lead activo: no tocamos nada, ya existe
+          } else {
+            await supabase.from("leads").insert({
+              full_name: args.full_name,
+              phone: cleanPhone,
+              email: args.email ?? null,
+              source: "agente_web",
+              status: "nuevo",
+              interested_course: args.interested_course ?? null,
+            });
+          }
+        }
+
+        leadCaptured = true;
+
+        if (!replyText) {
+          const firstName = args.full_name.split(" ")[0];
+          replyText = `¡Perfecto, ${firstName}! He registrado tus datos. Un comercial de Esmera se pondrá en contacto contigo lo antes posible. ¿Puedo ayudarte con algo más?`;
+        }
+      } catch {
+        replyText = replyText || "Gracias por tu interés. El equipo se pondrá en contacto contigo pronto.";
+      }
+    }
+
+    return Response.json({ message: replyText, lead_captured: leadCaptured }, { status: 200, headers: CORS_HEADERS });
   } catch {
     return Response.json({ error: "Error al conectar con OpenAI" }, { status: 502, headers: CORS_HEADERS });
   }
