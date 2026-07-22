@@ -27,6 +27,21 @@ async function insertNota(supabase: SupabaseClient, leadId: string, text: string
   if (error) console.error(tag, "Error inserting nota_interna:", error.message);
 }
 
+async function logActivity(supabase: SupabaseClient, leadId: string, leadName: string, action: string, description: string) {
+  const { error } = await supabase.from("activity_logs").insert({
+    user_id: SYSTEM_USER_ID,
+    user_name: "Sistema",
+    action,
+    entity_type: "lead",
+    entity_id: leadId,
+    entity_name: leadName,
+    description,
+    lead_id: leadId,
+    metadata: { source: "meta_ads_webhook" },
+  });
+  if (error) console.error(tag, "Error logging activity:", error.message);
+}
+
 export async function GET() {
   return Response.json({ ok: true, route: "/api/webhooks/savemyleads", status: "reachable" });
 }
@@ -137,18 +152,22 @@ export async function POST(req: NextRequest) {
       }
 
       const cursoInfo = interestedCourse ? ` interesado/a en ${interestedCourse}.` : ".";
-      await insertNota(supabase, lead.id, `Lead reactivado — nueva solicitud recibida vía Meta Ads${cursoInfo}`);
+      const reactivationText = `Lead reactivado — nueva solicitud recibida vía Meta Ads${cursoInfo}`;
+      await Promise.all([
+        insertNota(supabase, lead.id, reactivationText),
+        logActivity(supabase, lead.id, lead.full_name, "lead.reactivated", reactivationText),
+      ]);
 
       console.log(tag, "Lead reactivated:", lead.id, "|", lead.full_name);
       return Response.json({ ok: true, lead, reactivated: true }, { status: 200 });
     } else {
       // Lead activo — nota interna sin tocar estado ni asignación
       const cursoInfo = interestedCourse ? ` interesado/a en ${interestedCourse}` : "";
-      await insertNota(
-        supabase,
-        existingLead.id,
-        `Nueva solicitud recibida vía Meta Ads${cursoInfo} (lead en estado "${existingLead.status}").`,
-      );
+      const activeText = `Nueva solicitud recibida vía Meta Ads${cursoInfo} (lead en estado "${existingLead.status}").`;
+      await Promise.all([
+        insertNota(supabase, existingLead.id, activeText),
+        logActivity(supabase, existingLead.id, fullName, "lead.new_submission", activeText),
+      ]);
 
       console.log(tag, "Active lead — nota_interna inserted:", cleanPhone);
       return Response.json({ ok: true, skipped: true, reason: "active_lead" }, { status: 200 });
@@ -174,6 +193,8 @@ export async function POST(req: NextRequest) {
     console.error(tag, "DB insert error:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
+
+  await logActivity(supabase, lead.id, lead.full_name, "lead.created", `Lead creado vía Meta Ads${interestedCourse ? ` — curso: ${interestedCourse}` : ""}.`);
 
   console.log(tag, "Lead created:", lead.id, "|", lead.full_name);
   return Response.json({ ok: true, lead }, { status: 201 });
