@@ -1,8 +1,12 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/utils/phone";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const tag = "[webhook/savemyleads]";
+
+// ID del usuario sistema que firma las notas automáticas (sistemas@esmeraschool.com)
+const SYSTEM_USER_ID = "3f961910-a5ae-4851-bd44-a336aeb26a3b";
 
 /* ── field aliases that SaveMyLeads / Meta Lead Ads may send ── */
 function extract(body: Record<string, unknown>, keys: string[]): string | null {
@@ -11,6 +15,16 @@ function extract(body: Record<string, unknown>, keys: string[]): string | null {
     if (v !== undefined && v !== null && String(v).trim() !== "") return String(v).trim();
   }
   return null;
+}
+
+async function insertNota(supabase: SupabaseClient, leadId: string, text: string) {
+  const { error } = await supabase.from("lead_interactions").insert({
+    lead_id: leadId,
+    user_id: SYSTEM_USER_ID,
+    contact_type: "nota_interna",
+    notes: text,
+  });
+  if (error) console.error(tag, "Error inserting nota_interna:", error.message);
 }
 
 export async function GET() {
@@ -91,7 +105,7 @@ export async function POST(req: NextRequest) {
 
   /* ── 5. Deduplicar con lógica de reactivación ── */
   const [{ data: existingLead }, { data: dupStudent }] = await Promise.all([
-    supabase.from("leads").select("id, status, notes").eq("phone", cleanPhone).maybeSingle(),
+    supabase.from("leads").select("id, status").eq("phone", cleanPhone).maybeSingle(),
     supabase.from("students").select("id").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle(),
   ]);
 
@@ -103,13 +117,7 @@ export async function POST(req: NextRequest) {
 
   if (existingLead) {
     if (existingLead.status === "descartado") {
-      // Reactivar: volver a "nuevo" + actualizar datos + añadir nota (historial de descarte se conserva)
-      const today = new Date().toISOString().slice(0, 10);
-      const reactivationNote = `[${today}] Reactivado — nueva solicitud recibida vía Meta Ads.`;
-      const updatedNotes = existingLead.notes
-        ? `${existingLead.notes}\n${reactivationNote}`
-        : reactivationNote;
-
+      // Reactivar: volver a "nuevo" + actualizar datos + nota interna en el CRM
       const { data: lead, error } = await supabase
         .from("leads")
         .update({
@@ -117,7 +125,6 @@ export async function POST(req: NextRequest) {
           email: email ?? null,
           status: "nuevo",
           interested_course: interestedCourse ?? null,
-          notes: updatedNotes,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingLead.id)
@@ -129,23 +136,21 @@ export async function POST(req: NextRequest) {
         return Response.json({ error: error.message }, { status: 500 });
       }
 
+      const cursoInfo = interestedCourse ? ` interesado/a en ${interestedCourse}.` : ".";
+      await insertNota(supabase, lead.id, `Lead reactivado — nueva solicitud recibida vía Meta Ads${cursoInfo}`);
+
       console.log(tag, "Lead reactivated:", lead.id, "|", lead.full_name);
       return Response.json({ ok: true, lead, reactivated: true }, { status: 200 });
     } else {
-      // Lead activo — añadir nota sin cambiar estado ni asignación
-      const today = new Date().toISOString().slice(0, 10);
-      const cursoInfo = interestedCourse ? ` — curso: ${interestedCourse}` : "";
-      const activeNote = `[${today}] Nueva solicitud recibida vía Meta Ads${cursoInfo} (lead en estado "${existingLead.status}").`;
-      const updatedNotes = existingLead.notes
-        ? `${existingLead.notes}\n${activeNote}`
-        : activeNote;
+      // Lead activo — nota interna sin tocar estado ni asignación
+      const cursoInfo = interestedCourse ? ` interesado/a en ${interestedCourse}` : "";
+      await insertNota(
+        supabase,
+        existingLead.id,
+        `Nueva solicitud recibida vía Meta Ads${cursoInfo} (lead en estado "${existingLead.status}").`,
+      );
 
-      await supabase
-        .from("leads")
-        .update({ notes: updatedNotes, updated_at: new Date().toISOString() })
-        .eq("id", existingLead.id);
-
-      console.log(tag, "Active lead — note appended:", cleanPhone);
+      console.log(tag, "Active lead — nota_interna inserted:", cleanPhone);
       return Response.json({ ok: true, skipped: true, reason: "active_lead" }, { status: 200 });
     }
   }
