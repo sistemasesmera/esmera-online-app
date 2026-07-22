@@ -89,15 +89,65 @@ export async function POST(req: NextRequest) {
   const cleanPhone = normalizePhone(phone);
   const supabase = createAdminClient();
 
-  /* ── 5. Deduplicar — devolver 200 para que SaveMyLeads no reintente ── */
-  const [{ data: dupLead }, { data: dupStudent }] = await Promise.all([
-    supabase.from("leads").select("id").eq("phone", cleanPhone).maybeSingle(),
+  /* ── 5. Deduplicar con lógica de reactivación ── */
+  const [{ data: existingLead }, { data: dupStudent }] = await Promise.all([
+    supabase.from("leads").select("id, status, notes").eq("phone", cleanPhone).maybeSingle(),
     supabase.from("students").select("id").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle(),
   ]);
 
-  if (dupLead || dupStudent) {
-    console.log(tag, "Duplicate phone — skipping silently:", cleanPhone);
-    return Response.json({ ok: true, skipped: true, reason: "duplicate" }, { status: 200 });
+  // Ya es alumno — ignorar para que SaveMyLeads no reintente
+  if (dupStudent) {
+    console.log(tag, "Phone belongs to existing student — skipping:", cleanPhone);
+    return Response.json({ ok: true, skipped: true, reason: "existing_student" }, { status: 200 });
+  }
+
+  if (existingLead) {
+    if (existingLead.status === "descartado") {
+      // Reactivar: volver a "nuevo" + actualizar datos + añadir nota (historial de descarte se conserva)
+      const today = new Date().toISOString().slice(0, 10);
+      const reactivationNote = `[${today}] Reactivado — nueva solicitud recibida vía Meta Ads.`;
+      const updatedNotes = existingLead.notes
+        ? `${existingLead.notes}\n${reactivationNote}`
+        : reactivationNote;
+
+      const { data: lead, error } = await supabase
+        .from("leads")
+        .update({
+          full_name: fullName,
+          email: email ?? null,
+          status: "nuevo",
+          interested_course: interestedCourse ?? null,
+          notes: updatedNotes,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existingLead.id)
+        .select("id, full_name, phone, source, status")
+        .single();
+
+      if (error) {
+        console.error(tag, "DB reactivation error:", error.message);
+        return Response.json({ error: error.message }, { status: 500 });
+      }
+
+      console.log(tag, "Lead reactivated:", lead.id, "|", lead.full_name);
+      return Response.json({ ok: true, lead, reactivated: true }, { status: 200 });
+    } else {
+      // Lead activo — añadir nota sin cambiar estado ni asignación
+      const today = new Date().toISOString().slice(0, 10);
+      const cursoInfo = interestedCourse ? ` — curso: ${interestedCourse}` : "";
+      const activeNote = `[${today}] Nueva solicitud recibida vía Meta Ads${cursoInfo} (lead en estado "${existingLead.status}").`;
+      const updatedNotes = existingLead.notes
+        ? `${existingLead.notes}\n${activeNote}`
+        : activeNote;
+
+      await supabase
+        .from("leads")
+        .update({ notes: updatedNotes, updated_at: new Date().toISOString() })
+        .eq("id", existingLead.id);
+
+      console.log(tag, "Active lead — note appended:", cleanPhone);
+      return Response.json({ ok: true, skipped: true, reason: "active_lead" }, { status: 200 });
+    }
   }
 
   /* ── 6. Insertar lead ── */
