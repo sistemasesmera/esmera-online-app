@@ -139,6 +139,17 @@ export async function GET(req: NextRequest) {
     '</div>';
   document.body.appendChild(root);
 
+  /* ── Session ID ── */
+  var sessionId = (function() {
+    try {
+      var s = localStorage.getItem('ec-sid');
+      if (s) return s;
+      s = 'ec-' + Math.random().toString(36).slice(2, 10) + '-' + Date.now().toString(36);
+      localStorage.setItem('ec-sid', s);
+      return s;
+    } catch(e) { return 'ec-' + Math.random().toString(36).slice(2,10); }
+  })();
+
   /* ── Persistence (localStorage) ── */
   var LS_KEY = 'ec-history';
   var LS_MAX_AGE = 24 * 60 * 60 * 1000; // 24 h
@@ -215,7 +226,7 @@ export async function GET(req: NextRequest) {
     fetch(API_BASE + '/api/public/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
-      body: JSON.stringify({ messages: messages })
+      body: JSON.stringify({ messages: messages, session_id: sessionId })
     })
     .then(function(res) { return res.json(); })
     .then(function(data) {

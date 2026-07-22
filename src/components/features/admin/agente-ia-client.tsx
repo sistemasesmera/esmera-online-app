@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Bot, CheckCircle2, XCircle, Copy, Check } from "lucide-react";
+import { Bot, CheckCircle2, XCircle, Copy, Check, MessageSquare, ChevronDown, ChevronRight, UserCheck, User } from "lucide-react";
 
-import { saveAgentConfig, type AgentConfig } from "@/app/(app)/admin/agente-ia/actions";
+import { saveAgentConfig, type AgentConfig, type AgentConversation } from "@/app/(app)/admin/agente-ia/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,14 +20,77 @@ const MODELS = [
   { value: "gpt-4-turbo", label: "GPT-4 Turbo" },
 ];
 
+function ConversationRow({ conv }: { conv: AgentConversation }) {
+  const [open, setOpen] = useState(false);
+  const msgCount = conv.messages.length;
+  const date = conv.updated_at
+    ? new Date(conv.updated_at).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
+    : "—";
+
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors"
+      >
+        {open ? <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />}
+        <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">{conv.visitor_name ?? "Visitante anónimo"}</span>
+            {conv.visitor_phone && <span className="text-xs text-muted-foreground">{conv.visitor_phone}</span>}
+            {conv.lead_id && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full px-2 py-0.5">
+                <UserCheck className="h-3 w-3" /> Lead captado
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground mt-0.5">{date} · {msgCount} mensaje{msgCount !== 1 ? "s" : ""}</p>
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t bg-muted/20 px-4 py-3 flex flex-col gap-2 max-h-72 overflow-y-auto">
+          {conv.messages.length === 0 && (
+            <p className="text-xs text-muted-foreground text-center py-4">Sin mensajes guardados.</p>
+          )}
+          {conv.messages.map((msg, i) => (
+            <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              {msg.role !== "user" && (
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                  <Bot className="h-3 w-3 text-primary" />
+                </div>
+              )}
+              <div className={`max-w-[75%] rounded-xl px-3 py-2 text-xs leading-relaxed whitespace-pre-wrap ${
+                msg.role === "user"
+                  ? "bg-primary text-primary-foreground rounded-br-sm"
+                  : "bg-white border rounded-bl-sm"
+              }`}>
+                {msg.content}
+              </div>
+              {msg.role === "user" && (
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted border">
+                  <User className="h-3 w-3 text-muted-foreground" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AgentIaClient({
   config,
   hasApiKey,
   appUrl,
+  conversations = [],
 }: {
   config: AgentConfig;
   hasApiKey: boolean;
   appUrl: string;
+  conversations?: AgentConversation[];
 }) {
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
@@ -80,6 +143,12 @@ return (
           <TabsTrigger value="configuracion">Configuración</TabsTrigger>
           <TabsTrigger value="integracion">Integración</TabsTrigger>
           <TabsTrigger value="preview">Vista previa</TabsTrigger>
+          <TabsTrigger value="registro" className="gap-1.5">
+            Registro
+            {conversations.length > 0 && (
+              <span className="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary text-[10px] font-bold w-4 h-4">{conversations.length}</span>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         {/* ── Prompt ── */}
@@ -220,6 +289,29 @@ PREGUNTAS FRECUENTES
               <li>El widget se autoactualiza — no necesitas tocar el código de la web para cambiar el comportamiento.</li>
             </ul>
           </div>
+        </TabsContent>
+
+        {/* ── Registro ── */}
+        <TabsContent value="registro" className="mt-4 flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold text-sm">Conversaciones del agente</p>
+              <p className="text-xs text-muted-foreground">Últimas {conversations.length} conversaciones registradas, ordenadas por actividad reciente.</p>
+            </div>
+          </div>
+          {conversations.length === 0 ? (
+            <div className="rounded-lg border bg-muted/30 flex flex-col items-center justify-center py-16 gap-2 text-center">
+              <MessageSquare className="h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm font-medium text-muted-foreground">Sin conversaciones aún</p>
+              <p className="text-xs text-muted-foreground">Las conversaciones del widget aparecerán aquí cuando los visitantes chatéen.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {conversations.map((conv) => (
+                <ConversationRow key={conv.id} conv={conv} />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* ── Vista previa ── */}

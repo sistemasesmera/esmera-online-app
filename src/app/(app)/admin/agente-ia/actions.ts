@@ -16,6 +16,28 @@ export type AgentConfig = {
   updated_at: string | null;
 };
 
+export type AgentConversation = {
+  id: string;
+  session_id: string;
+  messages: { role: string; content: string }[];
+  lead_id: string | null;
+  lead_captured_at: string | null;
+  visitor_name: string | null;
+  visitor_phone: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+export async function getAgentConversations(): Promise<AgentConversation[]> {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("agent_conversations")
+    .select("*")
+    .order("updated_at", { ascending: false })
+    .limit(200);
+  return ((data ?? []) as unknown as AgentConversation[]);
+}
+
 export async function getAgentConfig(): Promise<AgentConfig | null> {
   const supabase = createAdminClient();
   const { data } = await supabase.from("agent_config").select("*").single();

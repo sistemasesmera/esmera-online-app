@@ -87,6 +87,50 @@ export type Database = {
           },
         ]
       }
+      agent_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          lead_captured_at: string | null
+          lead_id: string | null
+          messages: Json
+          session_id: string
+          updated_at: string | null
+          visitor_name: string | null
+          visitor_phone: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          lead_captured_at?: string | null
+          lead_id?: string | null
+          messages?: Json
+          session_id: string
+          updated_at?: string | null
+          visitor_name?: string | null
+          visitor_phone?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          lead_captured_at?: string | null
+          lead_id?: string | null
+          messages?: Json
+          session_id?: string
+          updated_at?: string | null
+          visitor_name?: string | null
+          visitor_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_config: {
         Row: {
           id: string

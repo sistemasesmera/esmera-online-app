@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "messages es requerido" }, { status: 422, headers: CORS_HEADERS });
   }
 
+  const sessionId = typeof body.session_id === "string" ? body.session_id : null;
   const isPreview = body.preview === true;
 
   const supabase = createAdminClient();
@@ -79,6 +80,27 @@ export async function POST(req: NextRequest) {
 
   if (!isPreview && !effectiveConfig.is_active) {
     return Response.json({ error: "El agente no está activo" }, { status: 503, headers: CORS_HEADERS });
+  }
+
+  // Upsert conversation session
+  let conversationId: string | null = null;
+  if (!isPreview && sessionId) {
+    const { data: existingConv } = await supabase
+      .from("agent_conversations")
+      .select("id")
+      .eq("session_id", sessionId)
+      .maybeSingle();
+
+    if (existingConv) {
+      conversationId = existingConv.id;
+    } else {
+      const { data: newConv } = await supabase
+        .from("agent_conversations")
+        .insert({ session_id: sessionId, messages: [] })
+        .select("id")
+        .single();
+      if (newConv) conversationId = newConv.id;
+    }
   }
 
   const systemParts: string[] = [];
@@ -201,6 +223,43 @@ export async function POST(req: NextRequest) {
       } catch (e) {
         console.error("[chat/capture_lead] Unexpected error:", e);
         replyText = replyText || "Gracias por tu interés. El equipo se pondrá en contacto contigo pronto.";
+      }
+    }
+
+    // Save conversation messages
+    if (!isPreview && conversationId) {
+      const updatedMessages = messages.concat(replyText ? [{ role: "assistant", content: replyText }] : []);
+      const now = new Date().toISOString();
+
+      if (leadCaptured) {
+        const capCall = choice?.tool_calls?.find((t) => t.function.name === "capture_lead");
+        if (capCall) {
+          try {
+            const a = JSON.parse(capCall.function.arguments) as { full_name: string; phone: string };
+            await supabase.from("agent_conversations").update({
+              messages: updatedMessages as unknown as import("@/types/database.types").Json,
+              updated_at: now,
+              visitor_name: a.full_name,
+              visitor_phone: normalizePhone(a.phone),
+              lead_captured_at: now,
+            }).eq("id", conversationId);
+          } catch {
+            await supabase.from("agent_conversations").update({
+              messages: updatedMessages as unknown as import("@/types/database.types").Json,
+              updated_at: now,
+            }).eq("id", conversationId);
+          }
+        } else {
+          await supabase.from("agent_conversations").update({
+            messages: updatedMessages as unknown as import("@/types/database.types").Json,
+            updated_at: now,
+          }).eq("id", conversationId);
+        }
+      } else {
+        await supabase.from("agent_conversations").update({
+          messages: updatedMessages as unknown as import("@/types/database.types").Json,
+          updated_at: now,
+        }).eq("id", conversationId);
       }
     }
 
