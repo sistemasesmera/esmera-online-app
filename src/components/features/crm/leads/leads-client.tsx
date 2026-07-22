@@ -759,22 +759,15 @@ function LeadKanbanCard({
           >
             Gestionar
           </Link>
-          {canEdit && nextStatuses.map((next) => (
+          {canEdit && nextStatuses.includes("descartado") && (
             <button
-              key={next}
               disabled={isPending}
-              onClick={() => handleTransition(next)}
-              className={`text-[11px] font-semibold rounded px-2 py-0.5 ring-1 transition-colors cursor-pointer disabled:opacity-50 ${
-                next === "descartado"
-                  ? "text-red-700 bg-red-50 ring-red-200 hover:bg-red-100"
-                  : next === "nuevo"
-                  ? "text-slate-700 bg-slate-50 ring-slate-200 hover:bg-slate-100"
-                  : "text-primary bg-primary/8 ring-primary/20 hover:bg-primary/15"
-              }`}
+              onClick={() => handleTransition("descartado")}
+              className="text-[11px] font-semibold rounded px-2 py-0.5 ring-1 transition-colors cursor-pointer disabled:opacity-50 text-red-700 bg-red-50 ring-red-200 hover:bg-red-100"
             >
-              {LEAD_TRANSITION_LABELS[next] ?? next}
+              Descartar
             </button>
-          ))}
+          )}
         </div>
       </div>
 
