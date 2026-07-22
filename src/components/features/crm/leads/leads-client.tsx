@@ -208,12 +208,14 @@ export function LeadsClient({
   const [assignOpen, setAssignOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "unassigned" | "">("");
+  const [hideDiscarded, setHideDiscarded] = useState(true);
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isPendingAssign, startAssignTransition] = useTransition();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:leads");
 
-  useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
+  useEffect(() => { setPageIndex(0); }, [search, statusFilter, hideDiscarded, sortOrder, pageSize]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -263,6 +265,7 @@ export function LeadsClient({
   const filtered = leads.filter((l) => {
     if (statusFilter === "unassigned") return !l.owner_id;
     if (!statusFilter && l.status === "convertido") return false;
+    if (!statusFilter && hideDiscarded && l.status === "descartado") return false;
     const matchSearch =
       !search ||
       l.full_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -271,8 +274,13 @@ export function LeadsClient({
     return matchSearch && matchStatus;
   });
 
-  const pageCount = Math.ceil(filtered.length / pageSize);
-  const pageData = filtered.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
+  const sorted = [...filtered].sort((a, b) => {
+    const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    return sortOrder === "newest" ? -diff : diff;
+  });
+
+  const pageCount = Math.ceil(sorted.length / pageSize);
+  const pageData = sorted.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize);
 
   const selectedIds = Object.keys(rowSelection).filter((id) => rowSelection[id]);
 
@@ -371,17 +379,39 @@ export function LeadsClient({
         searchPlaceholder="Buscar por nombre o email…"
         filters={
           viewMode === "table" ? (
-            <select
-              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "unassigned" | "")}
-            >
-              <option value="">Todos los estados</option>
-              {ALL_STATUSES.filter(([value]) => value !== "convertido").map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-              {canAssign && <option value="unassigned">Sin asignar</option>}
-            </select>
+            <div className="flex items-center gap-2 flex-wrap">
+              <select
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "unassigned" | "")}
+              >
+                <option value="">Todos los estados</option>
+                {ALL_STATUSES.filter(([value]) => value !== "convertido").map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+                {canAssign && <option value="unassigned">Sin asignar</option>}
+              </select>
+              <select
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as "newest" | "oldest")}
+              >
+                <option value="newest">Más reciente</option>
+                <option value="oldest">Más antiguo</option>
+              </select>
+              {!statusFilter && (
+                <button
+                  onClick={() => setHideDiscarded(!hideDiscarded)}
+                  className={`h-9 rounded-md border px-3 text-sm transition-colors ${
+                    hideDiscarded
+                      ? "bg-background border-input text-muted-foreground hover:text-foreground"
+                      : "bg-red-50 border-red-200 text-red-700"
+                  }`}
+                >
+                  {hideDiscarded ? "Mostrar descartados" : "Ocultar descartados"}
+                </button>
+              )}
+            </div>
           ) : undefined
         }
         actions={

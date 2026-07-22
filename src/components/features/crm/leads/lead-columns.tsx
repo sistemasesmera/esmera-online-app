@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Bot, Globe, Leaf, Megaphone, Phone, Share2, Users, Calendar, MoreHorizontal } from "lucide-react";
+import { ArrowRight, Bot, Flame, Globe, Leaf, Megaphone, Phone, Share2, Users, Calendar, MoreHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ColumnDef } from "@tanstack/react-table";
 
@@ -113,12 +113,19 @@ export function getLeadColumns(withCheckbox = false): ColumnDef<LeadWithJoins>[]
       accessorKey: "full_name",
       header: "Nombre",
       cell: ({ row }) => (
-        <Link
-          href={`/crm/leads/${row.original.id}`}
-          className="font-semibold text-foreground hover:text-primary transition-colors"
-        >
-          {row.original.full_name}
-        </Link>
+        <div className="flex items-center gap-1.5">
+          <Link
+            href={`/crm/leads/${row.original.id}`}
+            className="font-semibold text-foreground hover:text-primary transition-colors"
+          >
+            {row.original.full_name}
+          </Link>
+          {row.original.meta_submission_count > 0 && (
+            <span title={`${row.original.meta_submission_count} solicitud${row.original.meta_submission_count > 1 ? "es" : ""} recibida${row.original.meta_submission_count > 1 ? "s" : ""} vía Meta`}>
+              <Flame className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+            </span>
+          )}
+        </div>
       ),
     },
     {
