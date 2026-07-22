@@ -378,19 +378,20 @@ export function LeadsClient({
         onSearchChange={setSearch}
         searchPlaceholder="Buscar por nombre o email…"
         filters={
-          viewMode === "table" ? (
-            <div className="flex items-center gap-2 flex-wrap">
-              <select
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "unassigned" | "")}
-              >
-                <option value="">Todos los estados</option>
-                {ALL_STATUSES.filter(([value]) => value !== "convertido").map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-                {canAssign && <option value="unassigned">Sin asignar</option>}
-              </select>
+          <div className="flex items-center gap-2 flex-wrap">
+              {viewMode === "table" && (
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as LeadStatus | "unassigned" | "")}
+                >
+                  <option value="">Todos los estados</option>
+                  {ALL_STATUSES.filter(([value]) => value !== "convertido").map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                  {canAssign && <option value="unassigned">Sin asignar</option>}
+                </select>
+              )}
               <select
                 className="h-9 rounded-md border border-input bg-background px-3 text-sm"
                 value={sortOrder}
@@ -399,7 +400,7 @@ export function LeadsClient({
                 <option value="newest">Más reciente</option>
                 <option value="oldest">Más antiguo</option>
               </select>
-              {!statusFilter && (
+              {viewMode === "table" && !statusFilter && (
                 <button
                   onClick={() => setHideDiscarded(!hideDiscarded)}
                   className={`h-9 rounded-md border px-3 text-sm transition-colors ${
@@ -412,7 +413,6 @@ export function LeadsClient({
                 </button>
               )}
             </div>
-          ) : undefined
         }
         actions={
           <div className="flex items-center gap-2">
@@ -508,13 +508,8 @@ export function LeadsClient({
 
       {viewMode === "kanban" && (
         <LeadsKanban
-          key={search}
-          leads={leads.filter(
-            (l) =>
-              !search ||
-              l.full_name.toLowerCase().includes(search.toLowerCase()) ||
-              (l.email ?? "").toLowerCase().includes(search.toLowerCase())
-          )}
+          key={search + sortOrder}
+          leads={sorted}
           canEdit={canEdit}
           visibleFields={kanbanFields}
         />
