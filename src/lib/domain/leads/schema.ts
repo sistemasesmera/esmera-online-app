@@ -2,22 +2,24 @@ import { z } from "zod";
 
 import type { LeadSource, LeadStatus } from "@/types/database.types";
 
-export type DiscardReason = "no_interesado" | "otra_academia" | "sin_valor" | "precio" | "otro";
+export type DiscardReason = "no_interesado" | "otra_academia" | "sin_valor" | "precio" | "quiere_presencial" | "otro";
 
 export const DISCARD_REASONS: DiscardReason[] = [
   "no_interesado",
   "otra_academia",
   "sin_valor",
   "precio",
+  "quiere_presencial",
   "otro",
 ];
 
 export const DISCARD_REASON_LABELS: Record<DiscardReason, string> = {
-  no_interesado: "No está interesado",
-  otra_academia: "Eligió otra academia",
-  sin_valor:     "No ve valor en el curso",
-  precio:        "Precio elevado",
-  otro:          "Otro",
+  no_interesado:     "No está interesado",
+  otra_academia:     "Eligió otra academia",
+  sin_valor:         "No ve valor en el curso",
+  precio:            "Precio elevado",
+  quiere_presencial: "Quiere presencial",
+  otro:              "Otro",
 };
 
 export const LEAD_STATUSES: LeadStatus[] = ["nuevo", "en_contacto", "oferta_enviada", "convertido", "descartado"];
