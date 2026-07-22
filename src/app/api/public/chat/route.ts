@@ -143,34 +143,53 @@ export async function POST(req: NextRequest) {
           email?: string;
         };
 
-        const cleanPhone = normalizePhone(args.phone);
+        const tag = "[chat/capture_lead]";
+        console.log(tag, "args:", JSON.stringify(args));
 
-        const [{ data: existingLead }, { data: existingStudent }] = await Promise.all([
+        const cleanPhone = normalizePhone(args.phone);
+        console.log(tag, "cleanPhone:", cleanPhone);
+
+        const [{ data: existingLead, error: leadErr }, { data: existingStudent, error: studentErr }] = await Promise.all([
           supabase.from("leads").select("id, status").eq("phone", cleanPhone).maybeSingle(),
           supabase.from("students").select("id").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle(),
         ]);
 
+        if (leadErr) console.error(tag, "Error checking lead:", leadErr.message);
+        if (studentErr) console.error(tag, "Error checking student:", studentErr.message);
+        console.log(tag, "existingLead:", existingLead, "existingStudent:", existingStudent);
+
         if (!existingStudent) {
           if (existingLead) {
             if (existingLead.status === "descartado") {
-              await supabase.from("leads").update({
+              const { error: updErr } = await supabase.from("leads").update({
                 full_name: args.full_name,
                 status: "nuevo",
                 interested_course: args.interested_course ?? null,
                 updated_at: new Date().toISOString(),
               }).eq("id", existingLead.id);
+              if (updErr) console.error(tag, "Error reactivating lead:", updErr.message);
+              else console.log(tag, "Lead reactivated:", existingLead.id);
+            } else {
+              console.log(tag, "Lead already active — skipping insert:", existingLead.id);
             }
-            // Lead activo: no tocamos nada, ya existe
           } else {
-            await supabase.from("leads").insert({
+            const { data: newLead, error: insErr } = await supabase.from("leads").insert({
               full_name: args.full_name,
               phone: cleanPhone,
               email: args.email ?? null,
               source: "agente_web",
               status: "nuevo",
               interested_course: args.interested_course ?? null,
-            });
+            }).select("id").single();
+
+            if (insErr) {
+              console.error(tag, "Error inserting lead:", insErr.message, insErr.details, insErr.hint);
+            } else {
+              console.log(tag, "Lead created:", newLead?.id);
+            }
           }
+        } else {
+          console.log(tag, "Phone belongs to existing student — skipping");
         }
 
         leadCaptured = true;
@@ -179,7 +198,8 @@ export async function POST(req: NextRequest) {
           const firstName = args.full_name.split(" ")[0];
           replyText = `¡Perfecto, ${firstName}! He registrado tus datos. Un comercial de Esmera se pondrá en contacto contigo lo antes posible. ¿Puedo ayudarte con algo más?`;
         }
-      } catch {
+      } catch (e) {
+        console.error("[chat/capture_lead] Unexpected error:", e);
         replyText = replyText || "Gracias por tu interés. El equipo se pondrá en contacto contigo pronto.";
       }
     }
