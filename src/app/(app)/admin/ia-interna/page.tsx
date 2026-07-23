@@ -10,7 +10,7 @@ import { listIAPrompts } from "./actions";
 
 export default async function IAInternaPage() {
   const user = await getCurrentUser();
-  if (!user || !["tech", "jefe_comercial"].includes(user.role)) {
+  if (!user || user.role !== "tech") {
     redirect("/dashboard");
   }
 

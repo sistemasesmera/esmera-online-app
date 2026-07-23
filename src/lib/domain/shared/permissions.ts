@@ -27,6 +27,7 @@ export const CAPABILITIES = {
   manageCatalogs: ["tech"],
 
   // Cursos
+  viewCourses: ["tech", "administracion", "jefe_comercial", "comercial"],
   manageCourses: ["tech", "administracion"],
 
   // CRM Leads — comercial solo ve/gestiona los suyos; jefe_comercial ve todos

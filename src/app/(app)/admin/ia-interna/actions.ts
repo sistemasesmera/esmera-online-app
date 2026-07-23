@@ -38,7 +38,7 @@ export async function saveIAPrompt(
   prompt: string
 ): Promise<{ error: string | null }> {
   const user = await getCurrentUser();
-  if (!user || !["tech", "jefe_comercial"].includes(user.role)) {
+  if (!user || user.role !== "tech") {
     return { error: "No autorizado" };
   }
   if (!prompt.trim()) return { error: "El prompt no puede estar vacío" };
