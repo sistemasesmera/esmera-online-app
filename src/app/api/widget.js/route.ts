@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
   var style = document.createElement('style');
   style.textContent = [
     '#esmera-chat-root * { box-sizing: border-box; font-family: system-ui, sans-serif; }',
+    /* Button */
     '#esmera-chat-btn {',
     '  position: fixed; bottom: 24px; right: 24px; z-index: 99998;',
     '  width: 56px; height: 56px; border-radius: 50%;',
@@ -51,7 +52,15 @@ export async function GET(req: NextRequest) {
     '  transition: transform .2s, box-shadow .2s;',
     '}',
     '#esmera-chat-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(79,70,229,.55); }',
-    '#esmera-chat-btn svg { width: 26px; height: 26px; fill: #fff; }',
+    /* Icon swap inside button */
+    '.ec-btn-icon { position: absolute; display: flex; align-items: center; justify-content: center; transition: opacity .22s, transform .22s cubic-bezier(.34,1.56,.64,1); }',
+    '.ec-icon-msg svg { width: 26px; height: 26px; fill: #fff; }',
+    '.ec-icon-x { font-size: 22px; color: #fff; opacity: 0; transform: rotate(90deg) scale(.7); }',
+    '#esmera-chat-btn.ec-active .ec-icon-msg { opacity: 0; transform: rotate(-90deg) scale(.7); }',
+    '#esmera-chat-btn.ec-active .ec-icon-x  { opacity: 1; transform: rotate(0) scale(1); }',
+    /* Chat box */
+    '@keyframes ec-in  { from { opacity:0; transform:translateY(16px) scale(.95) } to { opacity:1; transform:none } }',
+    '@keyframes ec-out { from { opacity:1; transform:none } to { opacity:0; transform:translateY(16px) scale(.95) } }',
     '#esmera-chat-box {',
     '  position: fixed; bottom: 92px; right: 24px; z-index: 99999;',
     '  width: 360px; max-width: calc(100vw - 32px);',
@@ -59,8 +68,10 @@ export async function GET(req: NextRequest) {
     '  background: #fff; border-radius: 16px;',
     '  box-shadow: 0 8px 32px rgba(0,0,0,.18);',
     '  display: none; flex-direction: column; overflow: hidden;',
+    '  transform-origin: bottom right;',
     '}',
-    '#esmera-chat-box.ec-open { display: flex; }',
+    '#esmera-chat-box.ec-open    { display:flex; animation: ec-in  .26s cubic-bezier(.34,1.56,.64,1) both; }',
+    '#esmera-chat-box.ec-closing { animation: ec-out .16s ease-in both; }',
     '#esmera-chat-header {',
     '  background: #4f46e5; color: #fff; padding: 14px 16px;',
     '  display: flex; align-items: center; gap: 10px;',
@@ -83,9 +94,12 @@ export async function GET(req: NextRequest) {
     '  display: flex; flex-direction: column; gap: 10px;',
     '  background: #f8f8fa;',
     '}',
+    /* Messages with entrance animation */
+    '@keyframes ec-msg-in { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }',
     '.ec-msg {',
     '  max-width: 82%; padding: 10px 13px; border-radius: 16px;',
     '  font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;',
+    '  animation: ec-msg-in .18s ease both;',
     '}',
     '.ec-msg.ec-bot { background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08); border-bottom-left-radius: 4px; align-self: flex-start; }',
     '.ec-msg.ec-user { background: #4f46e5; color: #fff; border-bottom-right-radius: 4px; align-self: flex-end; }',
@@ -121,7 +135,8 @@ export async function GET(req: NextRequest) {
   root.id = 'esmera-chat-root';
   root.innerHTML =
     '<button id="esmera-chat-btn" aria-label="Abrir chat">' +
-      '<svg viewBox="0 0 24 24"><path d="M12 1c-4.97 0-9 4.03-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7c0-4.97-4.03-9-9-9z"/></svg>' +
+      '<span class="ec-btn-icon ec-icon-msg"><svg viewBox="0 0 24 24"><path d="M12 1c-4.97 0-9 4.03-9 9v7c0 1.66 1.34 3 3 3h3v-8H5v-2c0-3.87 3.13-7 7-7s7 3.13 7 7v2h-4v8h3c1.66 0 3-1.34 3-3v-7c0-4.97-4.03-9-9-9z"/></svg></span>' +
+      '<span class="ec-btn-icon ec-icon-x">&#x2715;</span>' +
     '</button>' +
     '<div id="esmera-chat-box" role="dialog">' +
       '<div id="esmera-chat-header">' +
@@ -252,13 +267,21 @@ export async function GET(req: NextRequest) {
   }
 
   function toggle() {
-    isOpen = !isOpen;
     if (isOpen) {
+      box.classList.add('ec-closing');
+      btn.classList.remove('ec-active');
+      setTimeout(function() {
+        box.classList.remove('ec-open');
+        box.classList.remove('ec-closing');
+      }, 160);
+      isOpen = false;
+    } else {
+      box.classList.remove('ec-closing');
       box.classList.add('ec-open');
+      btn.classList.add('ec-active');
       if (messages.length === 0) addMessage('assistant', WELCOME, false);
       input.focus();
-    } else {
-      box.classList.remove('ec-open');
+      isOpen = true;
     }
   }
 
