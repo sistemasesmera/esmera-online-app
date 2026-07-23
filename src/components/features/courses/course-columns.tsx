@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { Pencil } from "lucide-react";
+import { FileText, Pencil } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { CourseRow } from "@/lib/data/courses.repository";
@@ -33,6 +33,24 @@ export function getCourseColumns(onEdit?: (c: CourseRow) => void): ColumnDef<Cou
           <span className="text-muted-foreground">{row.original.duration_hours} h</span>
         ) : (
           <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      accessorKey: "dossier_url",
+      header: "Dossier",
+      cell: ({ row }) =>
+        row.original.dossier_url ? (
+          <a
+            href={row.original.dossier_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+          >
+            <FileText className="h-3.5 w-3.5 text-red-500" />
+            Ver PDF
+          </a>
+        ) : (
+          <span className="text-muted-foreground text-xs">—</span>
         ),
     },
     {

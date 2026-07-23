@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/require-role";
 import { createCourseSchema, updateCourseSchema, type CreateCourseInput, type UpdateCourseInput } from "@/lib/domain/courses/schema";
 import { CAPABILITIES } from "@/lib/domain/shared/permissions";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export type CourseDocField = "dossier_url" | "temario_url";
@@ -22,26 +23,28 @@ export async function uploadCourseDoc(
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) return { error: "No se recibió archivo", url: null };
-  if (file.type !== "application/pdf") return { error: "Solo se permiten archivos PDF", url: null };
+  const isPdf = file.type === "application/pdf" || file.type === "application/x-pdf" || file.name.toLowerCase().endsWith(".pdf");
+  if (!isPdf) return { error: "Solo se permiten archivos PDF", url: null };
   if (file.size > 10 * 1024 * 1024) return { error: "El archivo no puede superar 10 MB", url: null };
 
-  const supabase = await createClient();
+  const storage = createAdminClient();
   const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
   const path = `${courseId}/${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await storage.storage
     .from("course-docs")
     .upload(path, file, { upsert: true, contentType: "application/pdf" });
 
   if (uploadError) return { error: uploadError.message, url: null };
 
-  const { data: urlData } = supabase.storage.from("course-docs").getPublicUrl(path);
+  const { data: urlData } = storage.storage.from("course-docs").getPublicUrl(path);
   const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
   const updatePayload = field === "dossier_url"
     ? { dossier_url: publicUrl }
     : { temario_url: publicUrl };
 
+  const supabase = await createClient();
   const { error: dbError } = await supabase
     .from("courses")
     .update(updatePayload)
@@ -63,16 +66,17 @@ export async function deleteCourseDoc(
     return { error: "No autorizado" };
   }
 
-  const supabase = await createClient();
+  const storage = createAdminClient();
   const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
   const path = `${courseId}/${fileName}`;
 
-  await supabase.storage.from("course-docs").remove([path]);
+  await storage.storage.from("course-docs").remove([path]);
 
   const clearPayload = field === "dossier_url"
     ? { dossier_url: null }
     : { temario_url: null };
 
+  const supabase = await createClient();
   const { error } = await supabase
     .from("courses")
     .update(clearPayload)
