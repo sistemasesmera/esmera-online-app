@@ -21,39 +21,45 @@ export async function uploadCourseDoc(
     return { error: "No autorizado", url: null };
   }
 
-  const file = formData.get("file") as File | null;
-  if (!file || file.size === 0) return { error: "No se recibió archivo", url: null };
-  const isPdf = file.type === "application/pdf" || file.type === "application/x-pdf" || file.name.toLowerCase().endsWith(".pdf");
-  if (!isPdf) return { error: "Solo se permiten archivos PDF", url: null };
-  if (file.size > 10 * 1024 * 1024) return { error: "El archivo no puede superar 10 MB", url: null };
+  try {
+    const file = formData.get("file") as File | null;
+    if (!file || file.size === 0) return { error: "No se recibió archivo", url: null };
+    const isPdf = file.type === "application/pdf" || file.type === "application/x-pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) return { error: "Solo se permiten archivos PDF", url: null };
+    if (file.size > 10 * 1024 * 1024) return { error: "El archivo no puede superar 10 MB", url: null };
 
-  const storage = createAdminClient();
-  const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
-  const path = `${courseId}/${fileName}`;
+    const storage = createAdminClient();
+    const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
+    const path = `${courseId}/${fileName}`;
 
-  const { error: uploadError } = await storage.storage
-    .from("course-docs")
-    .upload(path, file, { upsert: true, contentType: "application/pdf" });
+    const { error: uploadError } = await storage.storage
+      .from("course-docs")
+      .upload(path, file, { upsert: true, contentType: "application/pdf" });
 
-  if (uploadError) return { error: uploadError.message, url: null };
+    if (uploadError) return { error: uploadError.message, url: null };
 
-  const { data: urlData } = storage.storage.from("course-docs").getPublicUrl(path);
-  const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+    const { data: urlData } = storage.storage.from("course-docs").getPublicUrl(path);
+    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-  const updatePayload = field === "dossier_url"
-    ? { dossier_url: publicUrl }
-    : { temario_url: publicUrl };
+    const updatePayload = field === "dossier_url"
+      ? { dossier_url: publicUrl }
+      : { temario_url: publicUrl };
 
-  const supabase = await createClient();
-  const { error: dbError } = await supabase
-    .from("courses")
-    .update(updatePayload)
-    .eq("id", courseId);
+    const supabase = await createClient();
+    const { error: dbError } = await supabase
+      .from("courses")
+      .update(updatePayload)
+      .eq("id", courseId);
 
-  if (dbError) return { error: dbError.message, url: null };
+    if (dbError) return { error: dbError.message, url: null };
 
-  revalidatePath("/courses");
-  return { error: null, url: publicUrl };
+    revalidatePath("/courses");
+    return { error: null, url: publicUrl };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error inesperado al subir el archivo";
+    console.error("[uploadCourseDoc]", err);
+    return { error: msg, url: null };
+  }
 }
 
 export async function deleteCourseDoc(
@@ -66,26 +72,32 @@ export async function deleteCourseDoc(
     return { error: "No autorizado" };
   }
 
-  const storage = createAdminClient();
-  const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
-  const path = `${courseId}/${fileName}`;
+  try {
+    const storage = createAdminClient();
+    const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
+    const path = `${courseId}/${fileName}`;
 
-  await storage.storage.from("course-docs").remove([path]);
+    await storage.storage.from("course-docs").remove([path]);
 
-  const clearPayload = field === "dossier_url"
-    ? { dossier_url: null }
-    : { temario_url: null };
+    const clearPayload = field === "dossier_url"
+      ? { dossier_url: null }
+      : { temario_url: null };
 
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("courses")
-    .update(clearPayload)
-    .eq("id", courseId);
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("courses")
+      .update(clearPayload)
+      .eq("id", courseId);
 
-  if (error) return { error: error.message };
+    if (error) return { error: error.message };
 
-  revalidatePath("/courses");
-  return { error: null };
+    revalidatePath("/courses");
+    return { error: null };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error inesperado al eliminar el archivo";
+    console.error("[deleteCourseDoc]", err);
+    return { error: msg };
+  }
 }
 
 type ActionResult = { error: string | null; success: boolean };
