@@ -10,55 +10,38 @@ import { createClient } from "@/lib/supabase/server";
 
 export type CourseDocField = "dossier_url" | "temario_url";
 
-export async function uploadCourseDoc(
+// Called after the browser uploads the file directly to Supabase Storage.
+// Only saves the resulting public URL to the DB — no file passes through the server.
+export async function saveCourseDocUrl(
   courseId: string,
   field: CourseDocField,
-  formData: FormData
-): Promise<{ error: string | null; url: string | null }> {
+  url: string
+): Promise<{ error: string | null }> {
   try {
     await requireRole(CAPABILITIES.manageCourses);
   } catch {
-    return { error: "No autorizado", url: null };
+    return { error: "No autorizado" };
   }
 
   try {
-    const file = formData.get("file") as File | null;
-    if (!file || file.size === 0) return { error: "No se recibió archivo", url: null };
-    const isPdf = file.type === "application/pdf" || file.type === "application/x-pdf" || file.name.toLowerCase().endsWith(".pdf");
-    if (!isPdf) return { error: "Solo se permiten archivos PDF", url: null };
-    if (file.size > 10 * 1024 * 1024) return { error: "El archivo no puede superar 10 MB", url: null };
-
-    const storage = createAdminClient();
-    const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
-    const path = `${courseId}/${fileName}`;
-
-    const { error: uploadError } = await storage.storage
-      .from("course-docs")
-      .upload(path, file, { upsert: true, contentType: "application/pdf" });
-
-    if (uploadError) return { error: uploadError.message, url: null };
-
-    const { data: urlData } = storage.storage.from("course-docs").getPublicUrl(path);
-    const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-
     const updatePayload = field === "dossier_url"
-      ? { dossier_url: publicUrl }
-      : { temario_url: publicUrl };
+      ? { dossier_url: url }
+      : { temario_url: url };
 
     const supabase = await createClient();
-    const { error: dbError } = await supabase
+    const { error } = await supabase
       .from("courses")
       .update(updatePayload)
       .eq("id", courseId);
 
-    if (dbError) return { error: dbError.message, url: null };
+    if (error) return { error: error.message };
 
     revalidatePath("/courses");
-    return { error: null, url: publicUrl };
+    return { error: null };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Error inesperado al subir el archivo";
-    console.error("[uploadCourseDoc]", err);
-    return { error: msg, url: null };
+    const msg = err instanceof Error ? err.message : "Error al guardar la URL";
+    console.error("[saveCourseDocUrl]", err);
+    return { error: msg };
   }
 }
 

@@ -4,7 +4,8 @@ import { FileText, Loader2, Trash2, Upload } from "lucide-react";
 import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { deleteCourseDoc, uploadCourseDoc, type CourseDocField } from "@/app/(app)/courses/actions";
+import { deleteCourseDoc, saveCourseDocUrl, type CourseDocField } from "@/app/(app)/courses/actions";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 
 export function CourseFileUpload({
@@ -27,17 +28,49 @@ export function CourseFileUpload({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const isPdf =
+      file.type === "application/pdf" ||
+      file.type === "application/x-pdf" ||
+      file.name.toLowerCase().endsWith(".pdf");
+    if (!isPdf) {
+      toast.error("Solo se permiten archivos PDF");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("El archivo no puede superar 10 MB");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
 
     startUpload(async () => {
-      const result = await uploadCourseDoc(courseId, field, formData);
+      // Upload directly from the browser to Supabase Storage —
+      // avoids Vercel's 4.5 MB serverless body limit.
+      const supabase = createClient();
+      const fileName = field === "dossier_url" ? "dossier.pdf" : "temario.pdf";
+      const path = `${courseId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("course-docs")
+        .upload(path, file, { upsert: true, contentType: "application/pdf" });
+
+      if (uploadError) {
+        toast.error(uploadError.message);
+        if (inputRef.current) inputRef.current.value = "";
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from("course-docs").getPublicUrl(path);
+      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      const result = await saveCourseDocUrl(courseId, field, publicUrl);
       if (result.error) {
         toast.error(result.error);
       } else {
-        setUrl(result.url);
+        setUrl(publicUrl);
         toast.success(`${label} subido correctamente`);
       }
+
       if (inputRef.current) inputRef.current.value = "";
     });
   }
