@@ -210,12 +210,13 @@ export function LeadsClient({
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "unassigned" | "">("");
   const [hideDiscarded, setHideDiscarded] = useState(true);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
+  const [ownerFilter, setOwnerFilter] = useState("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isPendingAssign, startAssignTransition] = useTransition();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:leads");
 
-  useEffect(() => { setPageIndex(0); }, [search, statusFilter, hideDiscarded, sortOrder, pageSize]);
+  useEffect(() => { setPageIndex(0); }, [search, statusFilter, hideDiscarded, sortOrder, pageSize, ownerFilter]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -253,6 +254,10 @@ export function LeadsClient({
     localStorage.setItem(STORAGE_KEY, mode);
   }
 
+  const comerciales = users.filter((u) =>
+    ["comercial", "jefe_comercial"].includes(u.role as string) && u.is_active
+  );
+
   const unassignedCount = leads.filter((l) => !l.owner_id).length;
 
   const counts = Object.fromEntries(
@@ -271,7 +276,8 @@ export function LeadsClient({
       l.full_name.toLowerCase().includes(search.toLowerCase()) ||
       (l.email ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = !statusFilter || l.status === (statusFilter as LeadStatus);
-    return matchSearch && matchStatus;
+    const matchOwner = !ownerFilter || l.owner_id === ownerFilter;
+    return matchSearch && matchStatus && matchOwner;
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -390,6 +396,18 @@ export function LeadsClient({
                     <option key={value} value={value}>{label}</option>
                   ))}
                   {canAssign && <option value="unassigned">Sin asignar</option>}
+                </select>
+              )}
+              {comerciales.length > 0 && (
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  value={ownerFilter}
+                  onChange={(e) => setOwnerFilter(e.target.value)}
+                >
+                  <option value="">Todos los comerciales</option>
+                  {comerciales.map((u) => (
+                    <option key={u.id} value={u.id}>{u.full_name}</option>
+                  ))}
                 </select>
               )}
               <select
