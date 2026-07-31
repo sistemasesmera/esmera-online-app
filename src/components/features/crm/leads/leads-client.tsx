@@ -274,7 +274,7 @@ export function LeadsClient({
     const matchSearch =
       !search ||
       l.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      (l.email ?? "").toLowerCase().includes(search.toLowerCase());
+      (l.phone ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = !statusFilter || l.status === (statusFilter as LeadStatus);
     const matchOwner = !ownerFilter || l.owner_id === ownerFilter;
     return matchSearch && matchStatus && matchOwner;
@@ -382,7 +382,7 @@ export function LeadsClient({
       <DataTableToolbar
         searchValue={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Buscar por nombre o email…"
+        searchPlaceholder="Buscar por nombre o teléfono…"
         filters={
           <div className="flex items-center gap-2 flex-wrap">
               {viewMode === "table" && (
