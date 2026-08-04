@@ -435,7 +435,7 @@ export async function getTvStats(): Promise<TvStats> {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
   const [comercialesRes, todayContractsRes, monthContractsRes] = await Promise.all([
-    supabase.from("users").select("id, full_name").eq("role", "comercial").order("full_name"),
+    supabase.from("users").select("id, full_name").in("role", ["comercial", "jefe_comercial"]).order("full_name"),
     supabase.from("contracts").select("amount, created_by, enrollments!enrollment_id(status)").is("deleted_at", null).gte("created_at", todayStart),
     supabase.from("contracts").select("amount, created_by, enrollments!enrollment_id(status)").is("deleted_at", null).gte("created_at", monthStart),
   ]);
