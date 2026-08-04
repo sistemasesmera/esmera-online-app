@@ -330,6 +330,7 @@ export function StudentDetailClient({
             courses={courses}
             presetStudentId={student.id}
             onSuccess={() => setAddEnrollmentOpen(false)}
+            canEdit={canEdit}
           />
         </DialogContent>
       </Dialog>
