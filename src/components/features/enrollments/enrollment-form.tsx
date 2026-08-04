@@ -25,6 +25,7 @@ import type { StudentRow } from "@/lib/data/students.repository";
 import {
   createEnrollmentSchema,
   DURATION_OPTIONS,
+  ACADEMY_ORIGIN_LABELS,
   type CreateEnrollmentInput,
 } from "@/lib/domain/enrollments/schema";
 
@@ -33,11 +34,12 @@ type Props = {
   presetStudentId?: string;
   students?: StudentRow[];
   onSuccess: () => void;
+  canEdit?: boolean;
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
-export function EnrollmentForm({ courses, presetStudentId, students, onSuccess }: Props) {
+export function EnrollmentForm({ courses, presetStudentId, students, onSuccess, canEdit }: Props) {
   const [isPending, startTransition] = useTransition();
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -50,6 +52,7 @@ export function EnrollmentForm({ courses, presetStudentId, students, onSuccess }
       duration_months: null,
       amount: 0,
       notes: "",
+      academy_origin: null,
       payment_type: undefined,
       cash_method: null,
       cash_amount: null,
@@ -127,6 +130,31 @@ export function EnrollmentForm({ courses, presetStudentId, students, onSuccess }
         registration={form.register("amount", { valueAsNumber: true })}
         error={form.formState.errors.amount}
       />
+      {canEdit && (
+        <Controller
+          name="academy_origin"
+          control={form.control}
+          render={({ field }) => (
+            <Field>
+              <FieldLabel>Origen presencial (opcional)</FieldLabel>
+              <Select
+                value={field.value ?? ""}
+                onValueChange={(v) => field.onChange(v || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Online (sin origen presencial)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Online (sin origen presencial)</SelectItem>
+                  {(Object.entries(ACADEMY_ORIGIN_LABELS) as [keyof typeof ACADEMY_ORIGIN_LABELS, string][]).map(([val, label]) => (
+                    <SelectItem key={val} value={val}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
+          )}
+        />
+      )}
       <TextareaField label="Notas (opcional)" registration={form.register("notes")} error={form.formState.errors.notes} />
       <PaymentPlanField
         watch={form.watch}

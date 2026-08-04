@@ -441,6 +441,7 @@ export function EnrollmentsClient({
               courses={courses}
               students={students}
               onSuccess={() => setCreateOpen(false)}
+              canEdit={canEdit}
             />
           </DialogContent>
         </Dialog>

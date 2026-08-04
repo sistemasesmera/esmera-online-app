@@ -37,6 +37,7 @@ import {
   assignTutor,
   updateEnrollmentStatus,
   updateEnrollmentDates,
+  updateAcademyOrigin,
 } from "@/app/(app)/enrollments/actions";
 import { deleteFollowup } from "@/app/(app)/tutoring/actions";
 import { attachCertificateDocument, createCertificate } from "@/app/(app)/certificates/actions";
@@ -76,7 +77,9 @@ import type { TutorWithUser } from "@/lib/data/tutors.repository";
 import {
   ENROLLMENT_STATUS_LABELS,
   ENROLLMENT_STATUS_TRANSITIONS,
+  ACADEMY_ORIGIN_LABELS,
   getTransitionLabel,
+  type AcademyOrigin,
 } from "@/lib/domain/enrollments/schema";
 import { CONTACT_TYPE_LABELS } from "@/lib/domain/followups/schema";
 import type { CashMethod, ContractStatus, EnrollmentStatus, Financer, PaymentType } from "@/types/database.types";
@@ -290,6 +293,8 @@ export function EnrollmentFichaClient({
   const [platformId, setPlatformId] = useState(enrollment.platform_id ?? "");
   const [tutorId, setTutorId] = useState(enrollment.tutor_id ?? "");
   const [confirmTransition, setConfirmTransition] = useState<EnrollmentStatus | null>(null);
+  const [academyOriginOpen, setAcademyOriginOpen] = useState(false);
+  const [editingAcademyOrigin, setEditingAcademyOrigin] = useState<string>(enrollment.academy_origin ?? "");
 
   const student = enrollment.students;
   const contract = enrollment.contracts?.[0];
@@ -383,6 +388,15 @@ export function EnrollmentFichaClient({
       const result = await assignTutor(enrollment.id, tutorId || null, platformId || null);
       if (result.error) toast.error(result.error);
       else { toast.success("Tutor y plataforma asignados"); setAssignOpen(false); }
+    });
+  }
+
+  function handleSaveAcademyOrigin() {
+    const origin = editingAcademyOrigin as AcademyOrigin | "";
+    startTransition(async () => {
+      const result = await updateAcademyOrigin(enrollment.id, origin || null);
+      if (result.error) toast.error(result.error);
+      else { toast.success("Origen actualizado"); setAcademyOriginOpen(false); }
     });
   }
 
@@ -503,13 +517,28 @@ export function EnrollmentFichaClient({
             {student?.full_name ?? "—"}
           </h1>
           <p className="text-muted-foreground mt-0.5">{enrollment.courses?.name ?? "—"}</p>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
             <Badge className={`text-xs font-semibold border ${STATUS_VARIANT[enrollment.status]}`}>
               {ENROLLMENT_STATUS_LABELS[enrollment.status]}
             </Badge>
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200 rounded px-1.5 py-0.5">
               <Hash className="h-3 w-3" />{enrollment.enrollment_number}
             </span>
+            {canEdit && enrollment.academy_origin && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-orange-700 bg-orange-50 ring-1 ring-orange-200 rounded px-1.5 py-0.5">
+                {ACADEMY_ORIGIN_LABELS[enrollment.academy_origin as AcademyOrigin]}
+              </span>
+            )}
+            {canEdit && (
+              <button
+                onClick={() => { setEditingAcademyOrigin(enrollment.academy_origin ?? ""); setAcademyOriginOpen(true); }}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                title="Editar origen presencial"
+              >
+                <Pencil className="h-3 w-3" />
+                {enrollment.academy_origin ? "Editar origen" : "Añadir origen presencial"}
+              </button>
+            )}
           </div>
         </div>
 
@@ -1430,6 +1459,37 @@ export function EnrollmentFichaClient({
               disabled={isPending}
             >
               {isPending ? "Guardando…" : confirmTransition === "cancelada" ? "Sí, cancelar" : "Sí, finalizar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: editar origen presencial */}
+      <Dialog open={academyOriginOpen} onOpenChange={setAcademyOriginOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Origen presencial</DialogTitle>
+          </DialogHeader>
+          <div className="py-2">
+            <Label className="text-sm font-medium mb-2 block">Academia de procedencia</Label>
+            <Select value={editingAcademyOrigin} onValueChange={setEditingAcademyOrigin}>
+              <SelectTrigger>
+                <SelectValue placeholder="Online (sin origen presencial)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Online (sin origen presencial)</SelectItem>
+                {(Object.entries(ACADEMY_ORIGIN_LABELS) as [AcademyOrigin, string][]).map(([val, label]) => (
+                  <SelectItem key={val} value={val}>{label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAcademyOriginOpen(false)} disabled={isPending}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveAcademyOrigin} disabled={isPending}>
+              {isPending ? "Guardando…" : "Guardar"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -2,6 +2,13 @@ import { z } from "zod";
 
 import type { EnrollmentStatus } from "@/types/database.types";
 
+export type AcademyOrigin = "logrono_presencial" | "madrid_presencial";
+
+export const ACADEMY_ORIGIN_LABELS: Record<AcademyOrigin, string> = {
+  logrono_presencial: "Logroño Presencial",
+  madrid_presencial: "Madrid Presencial",
+};
+
 export const ENROLLMENT_STATUS_LABELS: Record<EnrollmentStatus, string> = {
   pendiente: "Pendiente de confirmar",
   validada: "Validada",
@@ -43,6 +50,7 @@ export const createEnrollmentSchema = z.object({
   duration_months: z.number().int().min(1).max(12).nullable().optional(),
   amount: z.number().min(0).optional(),
   notes: z.string().optional(),
+  academy_origin: z.enum(["logrono_presencial", "madrid_presencial"]).nullable().optional(),
   payment_type: z.enum(["contado", "financiado", "mixto"], "Selecciona una forma de pago"),
   cash_method: z.enum(["transferencia", "efectivo"]).nullable().optional(),
   cash_amount: z.number().nullable().optional(),

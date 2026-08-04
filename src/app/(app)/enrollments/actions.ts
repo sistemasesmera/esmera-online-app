@@ -28,7 +28,7 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<Ac
   const parsed = createEnrollmentSchema.safeParse(input);
   if (!parsed.success) return { error: parsed.error.issues[0].message, success: false };
 
-  const { duration_months, notes, amount, payment_type, cash_method, cash_amount, financer, financed_amount, ...rest } = parsed.data;
+  const { duration_months, notes, amount, payment_type, cash_method, cash_amount, financer, financed_amount, academy_origin, ...rest } = parsed.data;
   const supabase = await createClient();
 
   let start_date: string | null = null;
@@ -48,6 +48,7 @@ export async function createEnrollment(input: CreateEnrollmentInput): Promise<Ac
       end_date,
       duration_months: duration_months ?? null,
       notes: notes || null,
+      academy_origin: parsed.data.academy_origin ?? null,
       created_by: currentUser.id,
     })
     .select("id")
@@ -437,5 +438,52 @@ export async function signContractForEnrollment(
     related_entity_id: enrollmentId,
   });
 
+  return { error: null, success: true };
+}
+
+export async function updateAcademyOrigin(
+  id: string,
+  origin: "logrono_presencial" | "madrid_presencial" | null
+): Promise<ActionResult> {
+  let currentUser;
+  try {
+    currentUser = await requireRole(CAPABILITIES.manageEnrollments);
+  } catch {
+    return { error: "No autorizado", success: false };
+  }
+
+  const supabase = await createClient();
+  const { data: current } = await supabase
+    .from("enrollments")
+    .select("student_id")
+    .eq("id", id)
+    .single();
+
+  if (!current) return { error: "Matrícula no encontrada", success: false };
+
+  const { error } = await supabase
+    .from("enrollments")
+    .update({ academy_origin: origin })
+    .eq("id", id);
+
+  if (error) return { error: error.message, success: false };
+
+  await logActivity({
+    userId: currentUser.id,
+    userName: currentUser.fullName,
+    action: "enrollment.academy_origin_updated",
+    entityType: "enrollment",
+    entityId: id,
+    description: origin
+      ? `Origen presencial establecido: ${origin === "logrono_presencial" ? "Logroño Presencial" : "Madrid Presencial"}`
+      : "Origen presencial eliminado",
+    studentId: current.student_id,
+    enrollmentId: id,
+    metadata: { academy_origin: origin },
+  });
+
+  revalidatePath("/enrollments");
+  revalidatePath(`/enrollments/${id}`);
+  revalidatePath(`/students/${current.student_id}`);
   return { error: null, success: true };
 }

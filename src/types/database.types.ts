@@ -492,6 +492,7 @@ export type Database = {
       }
       enrollments: {
         Row: {
+          academy_origin: string | null
           course_id: string
           created_at: string
           created_by: string
@@ -512,6 +513,7 @@ export type Database = {
           validated_by: string | null
         }
         Insert: {
+          academy_origin?: string | null
           course_id: string
           created_at?: string
           created_by: string
@@ -532,6 +534,7 @@ export type Database = {
           validated_by?: string | null
         }
         Update: {
+          academy_origin?: string | null
           course_id?: string
           created_at?: string
           created_by?: string

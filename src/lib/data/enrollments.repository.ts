@@ -34,6 +34,7 @@ export type EnrollmentWithCourse = {
   end_date: string | null;
   duration_months: number | null;
   notes: string | null;
+  academy_origin: string | null;
   created_at: string;
   courses: { name: string; code: string | null } | null;
   platforms: { name: string } | null;
@@ -48,7 +49,7 @@ export type EnrollmentWithStudent = EnrollmentWithCourse & {
 
 const ENROLLMENT_SELECT = `
   id, enrollment_number, student_id, course_id, platform_id, tutor_id, created_by, status,
-  enrollment_date, start_date, end_date, duration_months, notes, created_at,
+  enrollment_date, start_date, end_date, duration_months, notes, academy_origin, created_at,
   courses!course_id(name, code),
   platforms!platform_id(name),
   tutors!tutor_id(users!user_id(full_name)),
