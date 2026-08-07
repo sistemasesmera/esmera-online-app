@@ -6,6 +6,7 @@ import {
   Clock,
   FileCheck2,
   FileText,
+  Globe,
   KanbanSquare,
   List,
   PlayCircle,
@@ -54,6 +55,12 @@ const PIPELINE_STEPS: {
   color: string;
   headerColor: string;
 }[] = [
+  {
+    status: "pendiente_validar",
+    Icon: Globe,
+    color: "text-orange-600 bg-orange-50 border-orange-200",
+    headerColor: "bg-orange-50 border-orange-200 text-orange-700",
+  },
   {
     status: "pendiente",
     Icon: Clock,
@@ -136,9 +143,9 @@ export function EnrollmentsClient({
   useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
 
   const counts = Object.fromEntries(
-    (["pendiente", "validada", "activa", "finalizada"] as EnrollmentStatus[]).map((s) => [
-      s,
-      enrollments.filter((e) => e.status === s).length,
+    PIPELINE_STEPS.map(({ status }) => [
+      status,
+      enrollments.filter((e) => e.status === status).length,
     ])
   ) as Record<EnrollmentStatus, number>;
 
@@ -203,7 +210,7 @@ export function EnrollmentsClient({
   return (
     <>
       {/* Pipeline stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
         {PIPELINE_STEPS.map(({ status, Icon, color }) => {
           const isActive = statusFilter === status;
           const [textColor, bgColor, borderColor] = color.split(" ");
@@ -462,6 +469,14 @@ const KANBAN_COLUMNS: {
   countCls: string;
   colCls: string;
 }[] = [
+  {
+    status: "pendiente_validar",
+    label: "Pendiente validar · Web",
+    Icon: Globe,
+    headerCls: "bg-orange-50 border-orange-200",
+    countCls: "bg-orange-100 text-orange-700",
+    colCls: "bg-orange-50/40",
+  },
   {
     status: "pendiente",
     label: "Pendiente de confirmar",

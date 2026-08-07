@@ -441,6 +441,45 @@ export async function signContractForEnrollment(
   return { error: null, success: true };
 }
 
+export async function createContractForEnrollment(
+  enrollmentId: string,
+  studentId: string,
+  amount: number
+): Promise<ActionResult> {
+  let currentUser;
+  try {
+    currentUser = await requireRole(CAPABILITIES.manageEnrollments);
+  } catch {
+    return { error: "No autorizado", success: false };
+  }
+
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("contracts")
+    .select("id")
+    .eq("enrollment_id", enrollmentId)
+    .maybeSingle();
+
+  if (existing) return { error: "Ya existe un contrato para esta matrícula", success: false };
+
+  const { error } = await supabase.from("contracts").insert({
+    enrollment_id: enrollmentId,
+    student_id: studentId,
+    amount,
+    payment_type: "contado",
+    cash_method: "transferencia",
+    cash_amount: amount,
+    created_by: currentUser.id,
+  });
+
+  if (error) return { error: error.message, success: false };
+
+  revalidatePath("/enrollments");
+  revalidatePath(`/students/${studentId}`);
+  return { error: null, success: true };
+}
+
 export async function updateAcademyOrigin(
   id: string,
   origin: "logrono_presencial" | "madrid_presencial" | null

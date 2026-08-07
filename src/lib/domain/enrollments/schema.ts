@@ -10,6 +10,7 @@ export const ACADEMY_ORIGIN_LABELS: Record<AcademyOrigin, string> = {
 };
 
 export const ENROLLMENT_STATUS_LABELS: Record<EnrollmentStatus, string> = {
+  pendiente_validar: "Pendiente validar · Web",
   pendiente: "Pendiente de confirmar",
   validada: "Validada",
   activa: "En curso",
@@ -18,6 +19,7 @@ export const ENROLLMENT_STATUS_LABELS: Record<EnrollmentStatus, string> = {
 };
 
 export const ENROLLMENT_STATUS_TRANSITIONS: Record<EnrollmentStatus, EnrollmentStatus[]> = {
+  pendiente_validar: ["pendiente", "cancelada"],
   pendiente: ["validada", "cancelada"],
   validada: ["activa", "cancelada"],
   activa: ["finalizada", "cancelada"],
@@ -26,6 +28,8 @@ export const ENROLLMENT_STATUS_TRANSITIONS: Record<EnrollmentStatus, EnrollmentS
 };
 
 export const TRANSITION_LABELS: Partial<Record<`${EnrollmentStatus}->${EnrollmentStatus}`, string>> = {
+  "pendiente_validar->pendiente": "Confirmar contacto",
+  "pendiente_validar->cancelada": "Cancelar",
   "pendiente->validada": "Validar",
   "validada->activa": "Activar",
   "activa->finalizada": "Finalizar",

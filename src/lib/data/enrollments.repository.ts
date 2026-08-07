@@ -27,7 +27,7 @@ export type EnrollmentWithCourse = {
   course_id: string;
   platform_id: string | null;
   tutor_id: string | null;
-  created_by: string;
+  created_by: string | null;
   status: EnrollmentStatus;
   enrollment_date: string;
   start_date: string | null;
@@ -44,7 +44,7 @@ export type EnrollmentWithCourse = {
 };
 
 export type EnrollmentWithStudent = EnrollmentWithCourse & {
-  students: { id: string; full_name: string; dni_nie: string } | null;
+  students: { id: string; full_name: string; dni_nie: string | null } | null;
 };
 
 const ENROLLMENT_SELECT = `
@@ -75,7 +75,7 @@ export type EnrollmentFicha = EnrollmentWithCourse & {
     full_name: string;
     first_name: string;
     last_name: string;
-    dni_nie: string;
+    dni_nie: string | null;
     email: string;
     phone: string | null;
     address: string | null;

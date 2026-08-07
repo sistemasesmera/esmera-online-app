@@ -38,6 +38,7 @@ import {
   updateEnrollmentStatus,
   updateEnrollmentDates,
   updateAcademyOrigin,
+  createContractForEnrollment,
 } from "@/app/(app)/enrollments/actions";
 import { deleteFollowup } from "@/app/(app)/tutoring/actions";
 import { attachCertificateDocument, createCertificate } from "@/app/(app)/certificates/actions";
@@ -85,6 +86,7 @@ import { CONTACT_TYPE_LABELS } from "@/lib/domain/followups/schema";
 import type { CashMethod, ContractStatus, EnrollmentStatus, Financer, PaymentType } from "@/types/database.types";
 
 const STATUS_VARIANT: Record<EnrollmentStatus, string> = {
+  pendiente_validar: "bg-orange-100 text-orange-700 border-orange-200",
   pendiente: "bg-yellow-100 text-yellow-700 border-yellow-200",
   validada: "bg-blue-100 text-blue-700 border-blue-200",
   activa: "bg-emerald-100 text-emerald-700 border-emerald-200",
@@ -295,6 +297,9 @@ export function EnrollmentFichaClient({
   const [confirmTransition, setConfirmTransition] = useState<EnrollmentStatus | null>(null);
   const [academyOriginOpen, setAcademyOriginOpen] = useState(false);
   const [editingAcademyOrigin, setEditingAcademyOrigin] = useState<string>(enrollment.academy_origin ?? "");
+  const [createContractOpen, setCreateContractOpen] = useState(false);
+  const [contractAmount, setContractAmount] = useState("");
+  const [isPendingContract, startContractTransition] = useTransition();
 
   const student = enrollment.students;
   const contract = enrollment.contracts?.[0];
@@ -326,6 +331,21 @@ export function EnrollmentFichaClient({
   const nextStatuses = ENROLLMENT_STATUS_TRANSITIONS[enrollment.status];
   const isActiva = enrollment.status === "activa";
   const isValidada = enrollment.status === "validada";
+
+  function handleCreateContract() {
+    const amount = parseFloat(contractAmount.replace(",", "."));
+    if (isNaN(amount) || amount < 0) return;
+    startContractTransition(async () => {
+      const result = await createContractForEnrollment(enrollment.id, enrollment.student_id, amount);
+      if (result.error) toast.error(result.error);
+      else {
+        toast.success("Contrato creado correctamente");
+        setCreateContractOpen(false);
+        setContractAmount("");
+        router.refresh();
+      }
+    });
+  }
 
   function handleTransition(next: EnrollmentStatus) {
     if (next === "activa") {
@@ -832,7 +852,49 @@ export function EnrollmentFichaClient({
 
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">Sin contrato asociado.</p>
+                <div className="flex flex-col gap-3">
+                  <p className="text-sm text-muted-foreground">Sin contrato asociado.</p>
+                  {canEdit && !createContractOpen && (
+                    <Button size="sm" variant="outline" onClick={() => setCreateContractOpen(true)}>
+                      <Plus className="mr-1.5 h-3.5 w-3.5" />
+                      Crear contrato
+                    </Button>
+                  )}
+                  {createContractOpen && (
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="contract-amount" className="text-xs">Importe del contrato (€)</Label>
+                      <Input
+                        id="contract-amount"
+                        type="number"
+                        min={0}
+                        step={0.01}
+                        placeholder="Ej: 990"
+                        value={contractAmount}
+                        onChange={(e) => setContractAmount(e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        Se registrará como pago contado · transferencia (pago web).
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          disabled={isPendingContract || !contractAmount}
+                          onClick={handleCreateContract}
+                        >
+                          {isPendingContract ? "Guardando…" : "Guardar contrato"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => { setCreateContractOpen(false); setContractAmount(""); }}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>

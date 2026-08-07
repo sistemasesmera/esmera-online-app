@@ -18,7 +18,7 @@ export function StudentsClient({ students, canEdit = false }: { students: Studen
   const filtered = students.filter(
     (s) =>
       s.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      s.dni_nie.toLowerCase().includes(search.toLowerCase()) ||
+      (s.dni_nie ?? "").toLowerCase().includes(search.toLowerCase()) ||
       s.email.toLowerCase().includes(search.toLowerCase())
   );
 

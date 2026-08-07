@@ -4,7 +4,7 @@ import { ExternalLink, Plus, FileCheck2, FileText, ArrowRight } from "lucide-rea
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { updateEnrollmentStatus, signContractForEnrollment } from "@/app/(app)/enrollments/actions";
+import { updateEnrollmentStatus, signContractForEnrollment, createContractForEnrollment } from "@/app/(app)/enrollments/actions";
 import { CertificateForm } from "@/components/features/certificates/certificate-form";
 import { CertificateStatusActions } from "@/components/features/certificates/certificate-status-actions";
 import { AttachmentsTab } from "@/components/features/students/attachments-tab";
@@ -29,6 +29,7 @@ import { CONTACT_TYPE_LABELS, FOLLOWUP_STATUS_LABELS } from "@/lib/domain/follow
 import type { CertificateStatus, ContractStatus, EnrollmentStatus } from "@/types/database.types";
 
 const ENROLLMENT_STATUS_VARIANT: Record<EnrollmentStatus, string> = {
+  pendiente_validar: "bg-orange-100 text-orange-700 border border-orange-200",
   pendiente: "bg-yellow-100 text-yellow-700 border border-yellow-200",
   validada: "bg-blue-100 text-blue-700 border border-blue-200",
   activa: "bg-emerald-100 text-emerald-700 border border-emerald-200",
@@ -87,8 +88,11 @@ export function EnrollmentManageDialog({
   const [addCertOpen, setAddCertOpen] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
   const [docUrl, setDocUrl] = useState("");
+  const [createContractOpen, setCreateContractOpen] = useState(false);
+  const [contractAmount, setContractAmount] = useState("");
   const [isPendingStatus, startStatusTransition] = useTransition();
   const [isPendingSign, startSignTransition] = useTransition();
+  const [isPendingContract, startContractTransition] = useTransition();
 
   const courseName = enrollment.courses?.name ?? "—";
   const contract = enrollment.contracts?.[0];
@@ -99,6 +103,20 @@ export function EnrollmentManageDialog({
       const result = await updateEnrollmentStatus(enrollment.id, next);
       if (result.error) toast.error(result.error);
       else toast.success(`Estado actualizado a "${ENROLLMENT_STATUS_LABELS[next]}"`);
+    });
+  }
+
+  function handleCreateContract() {
+    const amount = parseFloat(contractAmount.replace(",", "."));
+    if (isNaN(amount) || amount < 0) return;
+    startContractTransition(async () => {
+      const result = await createContractForEnrollment(enrollment.id, enrollment.student_id, amount);
+      if (result.error) toast.error(result.error);
+      else {
+        toast.success("Contrato creado correctamente");
+        setCreateContractOpen(false);
+        setContractAmount("");
+      }
     });
   }
 
@@ -182,38 +200,79 @@ export function EnrollmentManageDialog({
           </div>
 
           {/* Row 3: contract */}
-          {contract && (
-            <div className="flex items-center gap-2 pt-1 border-t border-border/50">
-              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Contrato</span>
-              <Badge className={`text-xs font-semibold ${CONTRACT_STATUS_VARIANT[contract.status]}`}>
-                {contract.status === "firmado"
-                  ? <FileCheck2 className="mr-1 h-3 w-3 inline" />
-                  : <FileText className="mr-1 h-3 w-3 inline" />}
-                {CONTRACT_STATUS_LABELS[contract.status]}
-              </Badge>
-              <span className="text-sm font-semibold">
-                {contract.amount.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
-              </span>
-              {contract.document_url && (
-                <a
-                  href={contract.document_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
-                >
-                  <ExternalLink className="h-3 w-3" /> Ver
-                </a>
-              )}
-              {canEdit && contract.status !== "firmado" && contract.status !== "anulado" && (
-                <button
-                  onClick={() => setSignOpen(true)}
-                  className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
-                >
-                  Firmar contrato
-                </button>
-              )}
-            </div>
-          )}
+          <div className="pt-1 border-t border-border/50">
+            {contract ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Contrato</span>
+                <Badge className={`text-xs font-semibold ${CONTRACT_STATUS_VARIANT[contract.status]}`}>
+                  {contract.status === "firmado"
+                    ? <FileCheck2 className="mr-1 h-3 w-3 inline" />
+                    : <FileText className="mr-1 h-3 w-3 inline" />}
+                  {CONTRACT_STATUS_LABELS[contract.status]}
+                </Badge>
+                <span className="text-sm font-semibold">
+                  {contract.amount.toLocaleString("es-ES", { style: "currency", currency: "EUR" })}
+                </span>
+                {contract.document_url && (
+                  <a
+                    href={contract.document_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" /> Ver
+                  </a>
+                )}
+                {canEdit && contract.status !== "firmado" && contract.status !== "anulado" && (
+                  <button
+                    onClick={() => setSignOpen(true)}
+                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                  >
+                    Firmar contrato
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Contrato</span>
+                <span className="text-xs text-muted-foreground">Sin contrato</span>
+                {canEdit && !createContractOpen && (
+                  <button
+                    onClick={() => setCreateContractOpen(true)}
+                    className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold text-primary bg-primary/8 ring-1 ring-primary/20 hover:bg-primary/15 transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-3 w-3" /> Crear contrato
+                  </button>
+                )}
+                {createContractOpen && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={0}
+                      step={0.01}
+                      placeholder="Importe (€)"
+                      value={contractAmount}
+                      onChange={(e) => setContractAmount(e.target.value)}
+                      className="h-7 w-32 text-xs"
+                    />
+                    <button
+                      onClick={handleCreateContract}
+                      disabled={isPendingContract || !contractAmount}
+                      className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-semibold text-emerald-700 bg-emerald-50 ring-1 ring-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {isPendingContract ? "Guardando…" : "Guardar"}
+                    </button>
+                    <button
+                      onClick={() => { setCreateContractOpen(false); setContractAmount(""); }}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Tabs ── */}

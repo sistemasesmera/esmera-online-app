@@ -87,6 +87,47 @@ export type Database = {
           },
         ]
       }
+      agent_config: {
+        Row: {
+          id: string
+          is_active: boolean
+          knowledge: string
+          model: string
+          system_prompt: string
+          updated_at: string | null
+          updated_by: string | null
+          welcome_message: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          knowledge?: string
+          model?: string
+          system_prompt?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          welcome_message?: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          knowledge?: string
+          model?: string
+          system_prompt?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          welcome_message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_conversations: {
         Row: {
           created_at: string | null
@@ -127,47 +168,6 @@ export type Database = {
             columns: ["lead_id"]
             isOneToOne: false
             referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      agent_config: {
-        Row: {
-          id: string
-          is_active: boolean
-          knowledge: string
-          model: string
-          system_prompt: string
-          updated_at: string | null
-          updated_by: string | null
-          welcome_message: string
-        }
-        Insert: {
-          id?: string
-          is_active?: boolean
-          knowledge?: string
-          model?: string
-          system_prompt?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          welcome_message?: string
-        }
-        Update: {
-          id?: string
-          is_active?: boolean
-          knowledge?: string
-          model?: string
-          system_prompt?: string
-          updated_at?: string | null
-          updated_by?: string | null
-          welcome_message?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "agent_config_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -495,7 +495,7 @@ export type Database = {
           academy_origin: string | null
           course_id: string
           created_at: string
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
           duration_months: number | null
           end_date: string | null
@@ -504,8 +504,10 @@ export type Database = {
           id: string
           notes: string | null
           platform_id: string | null
+          source: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["enrollment_status"]
+          stripe_session_id: string | null
           student_id: string
           tutor_id: string | null
           updated_at: string
@@ -516,7 +518,7 @@ export type Database = {
           academy_origin?: string | null
           course_id: string
           created_at?: string
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
           duration_months?: number | null
           end_date?: string | null
@@ -525,8 +527,10 @@ export type Database = {
           id?: string
           notes?: string | null
           platform_id?: string | null
+          source?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
+          stripe_session_id?: string | null
           student_id: string
           tutor_id?: string | null
           updated_at?: string
@@ -537,7 +541,7 @@ export type Database = {
           academy_origin?: string | null
           course_id?: string
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
           duration_months?: number | null
           end_date?: string | null
@@ -546,8 +550,10 @@ export type Database = {
           id?: string
           notes?: string | null
           platform_id?: string | null
+          source?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["enrollment_status"]
+          stripe_session_id?: string | null
           student_id?: string
           tutor_id?: string | null
           updated_at?: string
@@ -599,9 +605,47 @@ export type Database = {
           },
         ]
       }
+      ia_interna_prompts: {
+        Row: {
+          id: string
+          is_active: boolean
+          key: string
+          name: string
+          prompt: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          key: string
+          name: string
+          prompt: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          key?: string
+          name?: string
+          prompt?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ia_interna_prompts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_interactions: {
         Row: {
-          contact_type: LeadContactType
+          contact_type: string
           created_at: string
           followup_date: string
           id: string
@@ -611,7 +655,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          contact_type: LeadContactType
+          contact_type: string
           created_at?: string
           followup_date?: string
           id?: string
@@ -621,7 +665,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          contact_type?: LeadContactType
+          contact_type?: string
           created_at?: string
           followup_date?: string
           id?: string
@@ -665,7 +709,7 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           province: string | null
-          source: Database["public"]["Enums"]["lead_source"]
+          source: string
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
         }
@@ -686,7 +730,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           province?: string | null
-          source?: Database["public"]["Enums"]["lead_source"]
+          source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -707,7 +751,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           province?: string | null
-          source?: Database["public"]["Enums"]["lead_source"]
+          source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -1008,9 +1052,9 @@ export type Database = {
           assigned_to: string | null
           birth_date: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           deleted_at: string | null
-          dni_nie: string
+          dni_nie: string | null
           email: string
           first_name: string
           full_name: string
@@ -1029,9 +1073,9 @@ export type Database = {
           assigned_to?: string | null
           birth_date?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           deleted_at?: string | null
-          dni_nie: string
+          dni_nie?: string | null
           email: string
           first_name: string
           full_name: string
@@ -1050,9 +1094,9 @@ export type Database = {
           assigned_to?: string | null
           birth_date?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           deleted_at?: string | null
-          dni_nie?: string
+          dni_nie?: string | null
           email?: string
           first_name?: string
           full_name?: string
@@ -1216,36 +1260,6 @@ export type Database = {
         }
         Relationships: []
       }
-      ia_interna_prompts: {
-        Row: {
-          id: string
-          key: string
-          name: string
-          prompt: string
-          is_active: boolean
-          updated_at: string | null
-          updated_by: string | null
-        }
-        Insert: {
-          id?: string
-          key: string
-          name: string
-          prompt: string
-          is_active?: boolean
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Update: {
-          id?: string
-          key?: string
-          name?: string
-          prompt?: string
-          is_active?: boolean
-          updated_at?: string | null
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
       webhook_logs: {
         Row: {
           created_at: string | null
@@ -1310,6 +1324,7 @@ export type Database = {
         | "activa"
         | "finalizada"
         | "cancelada"
+        | "pendiente_validar"
       financer: "alma" | "sabadell" | "sequra" | "esmera"
       followup_student_status:
         | "activo"
@@ -1475,13 +1490,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: [
-        "tech",
-        "jefe_comercial",
-        "comercial",
-        "administracion",
-        "tutor",
-      ],
+      app_role: ["tech", "jefe_comercial", "comercial", "administracion", "tutor"],
       cash_method: ["transferencia", "efectivo"],
       certificate_status: ["pendiente", "emitido", "anulado"],
       contact_type: ["correo", "llamada", "videollamada", "whatsapp", "otro"],
@@ -1492,6 +1501,7 @@ export const Constants = {
         "activa",
         "finalizada",
         "cancelada",
+        "pendiente_validar",
       ],
       financer: ["alma", "sabadell", "sequra", "esmera"],
       followup_student_status: [
@@ -1512,13 +1522,7 @@ export const Constants = {
         "organico",
         "agente_web",
       ],
-      lead_status: [
-        "nuevo",
-        "en_contacto",
-        "oferta_enviada",
-        "convertido",
-        "descartado",
-      ],
+      lead_status: ["nuevo", "en_contacto", "oferta_enviada", "convertido", "descartado"],
       notification_type: [
         "nueva_venta",
         "matricula_pendiente",
@@ -1540,18 +1544,17 @@ export const Constants = {
   },
 } as const
 
-// Legacy type aliases — kept for backwards compatibility with hand-written code
 export type AppRole = Database["public"]["Enums"]["app_role"]
 export type StudentStatus = Database["public"]["Enums"]["student_status"]
 export type EnrollmentStatus = Database["public"]["Enums"]["enrollment_status"]
 export type LeadStatus = Database["public"]["Enums"]["lead_status"]
 export type LeadSource = Database["public"]["Enums"]["lead_source"]
 export type ContractStatus = Database["public"]["Enums"]["contract_status"]
-export type PaymentType = Database["public"]["Enums"]["payment_type"]
 export type CashMethod = Database["public"]["Enums"]["cash_method"]
+export type PaymentType = Database["public"]["Enums"]["payment_type"]
 export type Financer = Database["public"]["Enums"]["financer"]
-export type ContactType = Database["public"]["Enums"]["contact_type"]
-export type FollowupStudentStatus = Database["public"]["Enums"]["followup_student_status"]
 export type CertificateStatus = Database["public"]["Enums"]["certificate_status"]
+export type ContactType = Database["public"]["Enums"]["contact_type"]
+export type LeadContactType = Database["public"]["Enums"]["contact_type"]
+export type FollowupStudentStatus = Database["public"]["Enums"]["followup_student_status"]
 export type NotificationType = Database["public"]["Enums"]["notification_type"]
-export type LeadContactType = "llamada_saliente" | "llamada_entrante" | "no_contesta" | "email" | "whatsapp" | "reunion" | "otro"
