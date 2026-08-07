@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { createClient } from "@/lib/supabase/client";
 import { BUCKET, type AttachmentWithUrl } from "@/lib/data/attachments.shared";
 
-const MAX_SIZE_MB = 20;
+const MAX_SIZE_MB = 50;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
 function fileIcon(mimeType: string | null) {

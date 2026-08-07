@@ -37,8 +37,8 @@ export function CourseFileUpload({
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("El archivo no puede superar 10 MB");
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error("El archivo no puede superar 50 MB");
       if (inputRef.current) inputRef.current.value = "";
       return;
     }
