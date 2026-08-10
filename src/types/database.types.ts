@@ -1493,6 +1493,18 @@ export type CompositeTypes<
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
+// Convenience type aliases for enums
+export type CertificateStatus   = Enums<"certificate_status">
+export type ContractStatus      = Enums<"contract_status">
+export type EnrollmentStatus    = Enums<"enrollment_status">
+export type StudentStatus       = Enums<"student_status">
+export type LeadStatus          = Enums<"lead_status">
+export type ContactType         = Enums<"contact_type">
+export type FollowupStudentStatus = Enums<"followup_student_status">
+export type CashMethod          = Enums<"cash_method">
+export type Financer            = Enums<"financer">
+export type PaymentType         = Enums<"payment_type">
+
 export const Constants = {
   public: {
     Enums: {
