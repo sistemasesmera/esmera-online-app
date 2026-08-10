@@ -100,7 +100,7 @@ export function CourseForm({ course, onSuccess }: { course?: CourseRow; onSucces
             <TextField label="Duración en horas (opcional)" type="number" registration={editForm.register("duration_hours", { valueAsNumber: true })} error={editForm.formState.errors.duration_hours} />
           </div>
           <div className="flex-1">
-            <TextField label="Precio (€)" type="number" registration={editForm.register("price", { valueAsNumber: true })} error={(editForm.formState.errors as Record<string, { message?: string }>).price} />
+            <TextField label="Precio (€)" type="number" registration={editForm.register("price", { valueAsNumber: true })} error={editForm.formState.errors.price as { message?: string; type: string } | undefined} />
           </div>
         </div>
         <SwitchField label="Curso activo" name="is_active" control={editForm.control} />
@@ -154,7 +154,7 @@ export function CourseForm({ course, onSuccess }: { course?: CourseRow; onSucces
           <TextField label="Duración en horas (opcional)" type="number" registration={createForm.register("duration_hours", { valueAsNumber: true })} error={createForm.formState.errors.duration_hours} />
         </div>
         <div className="flex-1">
-          <TextField label="Precio (€)" type="number" registration={createForm.register("price", { valueAsNumber: true })} error={(createForm.formState.errors as Record<string, { message?: string }>).price} />
+          <TextField label="Precio (€)" type="number" registration={createForm.register("price", { valueAsNumber: true })} error={createForm.formState.errors.price as { message?: string; type: string } | undefined} />
         </div>
       </div>
       {serverError && <p className="text-sm text-destructive">{serverError}</p>}

@@ -715,7 +715,7 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           province: string | null
-          source: string
+          source: Database["public"]["Enums"]["lead_source"]
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
         }
@@ -736,7 +736,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           province?: string | null
-          source?: string
+          source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -757,7 +757,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           province?: string | null
-          source?: string
+          source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -1494,16 +1494,20 @@ export type CompositeTypes<
     : never
 
 // Convenience type aliases for enums
-export type CertificateStatus   = Enums<"certificate_status">
-export type ContractStatus      = Enums<"contract_status">
-export type EnrollmentStatus    = Enums<"enrollment_status">
-export type StudentStatus       = Enums<"student_status">
-export type LeadStatus          = Enums<"lead_status">
-export type ContactType         = Enums<"contact_type">
-export type FollowupStudentStatus = Enums<"followup_student_status">
-export type CashMethod          = Enums<"cash_method">
-export type Financer            = Enums<"financer">
-export type PaymentType         = Enums<"payment_type">
+export type AppRole               = Database["public"]["Enums"]["app_role"]
+export type CertificateStatus     = Database["public"]["Enums"]["certificate_status"]
+export type ContractStatus        = Database["public"]["Enums"]["contract_status"]
+export type EnrollmentStatus      = Database["public"]["Enums"]["enrollment_status"]
+export type StudentStatus         = Database["public"]["Enums"]["student_status"]
+export type LeadStatus            = Database["public"]["Enums"]["lead_status"]
+export type LeadSource            = Database["public"]["Enums"]["lead_source"]
+export type ContactType           = Database["public"]["Enums"]["contact_type"]
+export type LeadContactType       = "llamada_saliente" | "llamada_entrante" | "no_contesta" | "email" | "whatsapp" | "reunion" | "otro"
+export type FollowupStudentStatus = Database["public"]["Enums"]["followup_student_status"]
+export type CashMethod            = Database["public"]["Enums"]["cash_method"]
+export type Financer              = Database["public"]["Enums"]["financer"]
+export type PaymentType           = Database["public"]["Enums"]["payment_type"]
+export type NotificationType      = Database["public"]["Enums"]["notification_type"]
 
 export const Constants = {
   public: {
