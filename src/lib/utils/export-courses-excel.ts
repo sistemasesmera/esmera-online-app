@@ -12,7 +12,7 @@ const ALT_ROW      = "F8F9FF";
 
 export async function exportCoursesExcel(courses: CourseRow[]) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Esmera School Manager";
+  wb.creator = "Esmera Online Manager";
   wb.created = new Date();
 
   const ws = wb.addWorksheet("Catálogo de Cursos", {
@@ -32,7 +32,7 @@ export async function exportCoursesExcel(courses: CourseRow[]) {
   // ── Title row ──────────────────────────────────────────────
   ws.mergeCells("A1:E1");
   const title = ws.getCell("A1");
-  title.value = "CATÁLOGO DE CURSOS — ESMERA SCHOOL";
+  title.value = "CATÁLOGO DE CURSOS — ESMERA ONLINE";
   title.font  = { name: "Calibri", bold: true, size: 16, color: { argb: "FF" + BRAND_COLOR } };
   title.alignment = { horizontal: "center", vertical: "middle" };
   ws.getRow(1).height = 36;
