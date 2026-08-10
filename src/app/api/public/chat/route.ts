@@ -103,9 +103,38 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Build dynamic courses catalog from DB grouped by category
+  const { data: activeCourses } = await supabase
+    .from("courses")
+    .select("name, code, duration_hours, price, category")
+    .eq("is_active", true)
+    .order("category")
+    .order("name");
+
+  let coursesCatalog = "";
+  if (activeCourses && activeCourses.length > 0) {
+    const grouped = new Map<string, typeof activeCourses>();
+    for (const c of activeCourses) {
+      const cat = c.category?.trim() || "Otros";
+      if (!grouped.has(cat)) grouped.set(cat, []);
+      grouped.get(cat)!.push(c);
+    }
+    const sections: string[] = [];
+    for (const [cat, items] of grouped) {
+      const lines = items.map((c) => {
+        const price = c.price != null ? `${Number(c.price).toLocaleString("es-ES")} €` : "consultar precio";
+        const hours = c.duration_hours != null ? ` (${c.duration_hours}h)` : "";
+        return `  - ${c.name}${hours}: ${price}`;
+      });
+      sections.push(`${cat}:\n${lines.join("\n")}`);
+    }
+    coursesCatalog = `\n\nCATÁLOGO DE CURSOS DISPONIBLES (actualizado en tiempo real):\n${sections.join("\n\n")}`;
+  }
+
   const systemParts: string[] = [];
   if (effectiveConfig.system_prompt) systemParts.push(effectiveConfig.system_prompt);
   if (effectiveConfig.knowledge) systemParts.push(`\n\nCONOCIMIENTO BASE:\n${effectiveConfig.knowledge}`);
+  if (coursesCatalog) systemParts.push(coursesCatalog);
   if (!isPreview) systemParts.push(LEAD_CAPTURE_INSTRUCTION);
   const systemPrompt = systemParts.join("") || "Eres un asistente virtual útil y amable.";
 

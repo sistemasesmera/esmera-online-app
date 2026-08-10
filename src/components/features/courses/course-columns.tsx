@@ -16,8 +16,18 @@ export function getCourseColumns(onEdit?: (c: CourseRow) => void): ColumnDef<Cou
       ),
     },
     {
+      accessorKey: "category",
+      header: "Categoría",
+      cell: ({ row }) =>
+        row.original.category ? (
+          <span className="text-sm text-muted-foreground">{row.original.category}</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
       accessorKey: "code",
-      header: "Código",
+      header: "Código interno",
       cell: ({ row }) =>
         row.original.code ? (
           <span className="font-mono text-sm text-muted-foreground">{row.original.code}</span>
@@ -31,6 +41,18 @@ export function getCourseColumns(onEdit?: (c: CourseRow) => void): ColumnDef<Cou
       cell: ({ row }) =>
         row.original.duration_hours != null ? (
           <span className="text-muted-foreground">{row.original.duration_hours} h</span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      accessorKey: "price",
+      header: "Precio",
+      cell: ({ row }) =>
+        row.original.price != null ? (
+          <span className="font-semibold text-foreground">
+            {Number(row.original.price).toLocaleString("es-ES")} €
+          </span>
         ) : (
           <span className="text-muted-foreground">—</span>
         ),

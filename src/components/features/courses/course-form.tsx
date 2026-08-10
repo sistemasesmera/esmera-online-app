@@ -50,6 +50,7 @@ export function CourseForm({ course, onSuccess }: { course?: CourseRow; onSucces
     defaultValues: {
       name: "",
       code: "",
+      category: "",
       description: "",
       is_fundae: false,
       is_certificado_profesionalidad: false,
@@ -61,8 +62,10 @@ export function CourseForm({ course, onSuccess }: { course?: CourseRow; onSucces
     defaultValues: {
       name: course?.name ?? "",
       code: course?.code ?? "",
+      category: course?.category ?? "",
       description: course?.description ?? "",
       duration_hours: course?.duration_hours ?? undefined,
+      price: course?.price != null ? Number(course.price) : undefined,
       is_fundae: false,
       is_certificado_profesionalidad: false,
       is_active: course?.is_active ?? true,
@@ -83,9 +86,23 @@ export function CourseForm({ course, onSuccess }: { course?: CourseRow; onSucces
         className="flex flex-col gap-4"
       >
         <TextField label="Nombre del curso" registration={editForm.register("name")} error={editForm.formState.errors.name} />
-        <TextField label="Código (opcional)" registration={editForm.register("code")} error={editForm.formState.errors.code} />
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <TextField label="Código interno (opcional)" registration={editForm.register("code")} error={editForm.formState.errors.code} />
+          </div>
+          <div className="flex-1">
+            <TextField label="Categoría (opcional)" registration={editForm.register("category")} error={editForm.formState.errors.category} />
+          </div>
+        </div>
         <TextareaField label="Descripción (opcional)" registration={editForm.register("description")} error={editForm.formState.errors.description} />
-        <TextField label="Duración en horas (opcional)" type="number" registration={editForm.register("duration_hours", { valueAsNumber: true })} error={editForm.formState.errors.duration_hours} />
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <TextField label="Duración en horas (opcional)" type="number" registration={editForm.register("duration_hours", { valueAsNumber: true })} error={editForm.formState.errors.duration_hours} />
+          </div>
+          <div className="flex-1">
+            <TextField label="Precio (€)" type="number" registration={editForm.register("price", { valueAsNumber: true })} error={(editForm.formState.errors as Record<string, { message?: string }>).price} />
+          </div>
+        </div>
         <SwitchField label="Curso activo" name="is_active" control={editForm.control} />
 
         <div className="border-t pt-4 flex flex-col gap-3">
@@ -123,9 +140,23 @@ export function CourseForm({ course, onSuccess }: { course?: CourseRow; onSucces
       className="flex flex-col gap-4"
     >
       <TextField label="Nombre del curso" registration={createForm.register("name")} error={createForm.formState.errors.name} />
-      <TextField label="Código (opcional)" registration={createForm.register("code")} error={createForm.formState.errors.code} />
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <TextField label="Código interno (opcional)" registration={createForm.register("code")} error={createForm.formState.errors.code} />
+        </div>
+        <div className="flex-1">
+          <TextField label="Categoría (opcional)" registration={createForm.register("category")} error={createForm.formState.errors.category} />
+        </div>
+      </div>
       <TextareaField label="Descripción (opcional)" registration={createForm.register("description")} error={createForm.formState.errors.description} />
-      <TextField label="Duración en horas (opcional)" type="number" registration={createForm.register("duration_hours", { valueAsNumber: true })} error={createForm.formState.errors.duration_hours} />
+      <div className="flex gap-3">
+        <div className="flex-1">
+          <TextField label="Duración en horas (opcional)" type="number" registration={createForm.register("duration_hours", { valueAsNumber: true })} error={createForm.formState.errors.duration_hours} />
+        </div>
+        <div className="flex-1">
+          <TextField label="Precio (€)" type="number" registration={createForm.register("price", { valueAsNumber: true })} error={(createForm.formState.errors as Record<string, { message?: string }>).price} />
+        </div>
+      </div>
       {serverError && <p className="text-sm text-destructive">{serverError}</p>}
       <SubmitRow isPending={isPending} isEdit={false} onCancel={onSuccess} />
     </form>

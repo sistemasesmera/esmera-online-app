@@ -97,12 +97,14 @@ export async function createCourse(input: CreateCourseInput): Promise<ActionResu
     return { error: parsed.error.issues[0].message, success: false };
   }
 
-  const { code, duration_hours, ...rest } = parsed.data;
+  const { code, category, duration_hours, price, ...rest } = parsed.data;
   const supabase = await createClient();
   const { error } = await supabase.from("courses").insert({
     ...rest,
     code: code || null,
+    category: category || null,
     duration_hours: duration_hours ?? null,
+    price: price ?? null,
   });
 
   if (error) {
@@ -126,14 +128,16 @@ export async function updateCourse(id: string, input: UpdateCourseInput): Promis
     return { error: parsed.error.issues[0].message, success: false };
   }
 
-  const { code, duration_hours, ...rest } = parsed.data;
+  const { code, category, duration_hours, price, ...rest } = parsed.data;
   const supabase = await createClient();
   const { error } = await supabase
     .from("courses")
     .update({
       ...rest,
       code: code || null,
+      category: category || null,
       duration_hours: duration_hours ?? null,
+      price: price ?? null,
     })
     .eq("id", id);
 

@@ -3,8 +3,10 @@ import { z } from "zod";
 export const createCourseSchema = z.object({
   name: z.string().min(2, "Mínimo 2 caracteres"),
   code: z.string().optional(),
+  category: z.string().optional(),
   description: z.string().optional(),
   duration_hours: z.number().int("Debe ser entero").min(1, "Mínimo 1 hora").optional(),
+  price: z.number().min(0, "El precio no puede ser negativo").optional(),
   is_fundae: z.boolean(),
   is_certificado_profesionalidad: z.boolean(),
 });

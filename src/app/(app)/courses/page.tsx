@@ -19,7 +19,13 @@ export default async function CoursesPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-2xl font-semibold">Cursos</h1>
-        <p className="text-muted-foreground">Catálogo de cursos disponibles en la academia.</p>
+        <p className="text-muted-foreground">
+          Catálogo de cursos disponibles en la academia.{" "}
+          <span className="font-medium text-foreground">
+            {courses.filter((c) => c.is_active).length} activos
+          </span>
+          {" "}/ {courses.length} totales
+        </p>
       </div>
       <CoursesClient courses={courses} canEdit={canEdit} />
     </div>
