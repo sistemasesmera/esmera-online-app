@@ -415,6 +415,7 @@ export type Database = {
       }
       courses: {
         Row: {
+          category: string | null
           code: string | null
           created_at: string
           description: string | null
@@ -425,10 +426,12 @@ export type Database = {
           is_certificado_profesionalidad: boolean
           is_fundae: boolean
           name: string
+          price: number | null
           temario_url: string | null
           updated_at: string
         }
         Insert: {
+          category?: string | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -439,10 +442,12 @@ export type Database = {
           is_certificado_profesionalidad?: boolean
           is_fundae?: boolean
           name: string
+          price?: number | null
           temario_url?: string | null
           updated_at?: string
         }
         Update: {
+          category?: string | null
           code?: string | null
           created_at?: string
           description?: string | null
@@ -453,6 +458,7 @@ export type Database = {
           is_certificado_profesionalidad?: boolean
           is_fundae?: boolean
           name?: string
+          price?: number | null
           temario_url?: string | null
           updated_at?: string
         }
@@ -709,7 +715,7 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           province: string | null
-          source: Database["public"]["Enums"]["lead_source"]
+          source: string
           status: Database["public"]["Enums"]["lead_status"]
           updated_at: string
         }
@@ -730,7 +736,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           province?: string | null
-          source?: Database["public"]["Enums"]["lead_source"]
+          source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -751,7 +757,7 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           province?: string | null
-          source?: Database["public"]["Enums"]["lead_source"]
+          source?: string
           status?: Database["public"]["Enums"]["lead_status"]
           updated_at?: string
         }
@@ -1495,66 +1501,14 @@ export const Constants = {
       certificate_status: ["pendiente", "emitido", "anulado"],
       contact_type: ["correo", "llamada", "videollamada", "whatsapp", "otro"],
       contract_status: ["borrador", "enviado", "firmado", "anulado"],
-      enrollment_status: [
-        "pendiente",
-        "validada",
-        "activa",
-        "finalizada",
-        "cancelada",
-        "pendiente_validar",
-      ],
+      enrollment_status: ["pendiente", "validada", "activa", "finalizada", "cancelada", "pendiente_validar"],
       financer: ["alma", "sabadell", "sequra", "esmera"],
-      followup_student_status: [
-        "activo",
-        "pendiente",
-        "sin_actividad",
-        "riesgo_abandono",
-        "finalizado",
-      ],
-      lead_source: [
-        "web",
-        "referido",
-        "redes_sociales",
-        "llamada_entrante",
-        "evento",
-        "otro",
-        "meta_ads",
-        "organico",
-        "agente_web",
-      ],
+      followup_student_status: ["activo", "pendiente", "sin_actividad", "riesgo_abandono", "finalizado"],
+      lead_source: ["web", "referido", "redes_sociales", "llamada_entrante", "evento", "otro", "meta_ads", "organico", "agente_web"],
       lead_status: ["nuevo", "en_contacto", "oferta_enviada", "convertido", "descartado"],
-      notification_type: [
-        "nueva_venta",
-        "matricula_pendiente",
-        "tutor_asignado",
-        "alumno_inactivo",
-        "curso_finalizado",
-        "certificado_pendiente",
-      ],
+      notification_type: ["nueva_venta", "matricula_pendiente", "tutor_asignado", "alumno_inactivo", "curso_finalizado", "certificado_pendiente"],
       payment_type: ["contado", "financiado", "mixto"],
-      student_status: [
-        "en_formacion",
-        "seguimiento_activo",
-        "riesgo_abandono",
-        "sin_actividad",
-        "finalizado",
-        "expediente_cerrado",
-      ],
+      student_status: ["en_formacion", "seguimiento_activo", "riesgo_abandono", "sin_actividad", "finalizado", "expediente_cerrado"],
     },
   },
 } as const
-
-export type AppRole = Database["public"]["Enums"]["app_role"]
-export type StudentStatus = Database["public"]["Enums"]["student_status"]
-export type EnrollmentStatus = Database["public"]["Enums"]["enrollment_status"]
-export type LeadStatus = Database["public"]["Enums"]["lead_status"]
-export type LeadSource = Database["public"]["Enums"]["lead_source"]
-export type ContractStatus = Database["public"]["Enums"]["contract_status"]
-export type CashMethod = Database["public"]["Enums"]["cash_method"]
-export type PaymentType = Database["public"]["Enums"]["payment_type"]
-export type Financer = Database["public"]["Enums"]["financer"]
-export type CertificateStatus = Database["public"]["Enums"]["certificate_status"]
-export type ContactType = Database["public"]["Enums"]["contact_type"]
-export type LeadContactType = "llamada_saliente" | "llamada_entrante" | "no_contesta" | "email" | "whatsapp" | "reunion" | "otro"
-export type FollowupStudentStatus = Database["public"]["Enums"]["followup_student_status"]
-export type NotificationType = Database["public"]["Enums"]["notification_type"]
