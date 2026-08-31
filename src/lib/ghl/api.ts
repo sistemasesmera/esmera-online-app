@@ -48,8 +48,6 @@ export async function fetchGhlConversations(limit = 100): Promise<GhlConversatio
   const url = new URL(`${GHL_API_BASE}/conversations/search`);
   url.searchParams.set("locationId", locationId);
   url.searchParams.set("limit", String(limit));
-  url.searchParams.set("sort", "last_message_date");
-  url.searchParams.set("sortDirection", "desc");
 
   const res = await fetch(url.toString(), {
     headers: ghlHeaders(),
