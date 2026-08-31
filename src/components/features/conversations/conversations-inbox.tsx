@@ -183,6 +183,11 @@ export function ConversationsInbox({
           loadError={loadError}
           onRefresh={() => loadMessages(active.ghl_conversation_id, true)}
           onMessageSent={(msg) => addOptimistic(active.ghl_conversation_id, msg)}
+          onAfterSend={() => {
+            const convId = active.ghl_conversation_id;
+            setOptimistic((prev) => ({ ...prev, [convId]: [] }));
+            loadMessages(convId, true);
+          }}
         />
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
@@ -239,13 +244,14 @@ function ThreadCard({ thread, isActive, onClick }: {
 }
 
 /* ── Thread detail ── */
-function ThreadDetail({ thread, messages, isLoading, loadError, onRefresh, onMessageSent }: {
+function ThreadDetail({ thread, messages, isLoading, loadError, onRefresh, onMessageSent, onAfterSend }: {
   thread: ConversationThread;
   messages: MessageDisplay[];
   isLoading: boolean;
   loadError: string | null;
   onRefresh: () => void;
   onMessageSent: (msg: MessageDisplay) => void;
+  onAfterSend: () => void;
 }) {
   const displayName = thread.contact_name ?? thread.contact_phone ?? "Desconocido";
   const [draft, setDraft] = useState("");
@@ -265,7 +271,12 @@ function ThreadDetail({ thread, messages, isLoading, loadError, onRefresh, onMes
     onMessageSent({ id: `opt-${Date.now()}`, body: text, direction: "outbound", dateAdded: new Date().toISOString(), attachments: [], mediaType: "text" });
     startTransition(async () => {
       const result = await sendConversationMessage(thread.ghl_contact_id, thread.contact_phone, text);
-      if (!result.ok) setSendError(result.error ?? "Error al enviar");
+      if (!result.ok) {
+        setSendError(result.error ?? "Error al enviar");
+      } else {
+        // Reemplazar optimistas con mensajes reales de GHL
+        onAfterSend();
+      }
     });
   }
 
