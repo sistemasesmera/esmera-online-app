@@ -60,6 +60,9 @@ export const CAPABILITIES = {
   // Certificados
   manageCertificates: ["tech", "administracion"],
 
+  // Conversaciones GHL (WhatsApp / SMS)
+  viewConversations: ["tech", "jefe_comercial", "comercial", "administracion"],
+
   // Informes / auditoría — solo administrador
   viewReports: ["tech"],
   viewAuditLogs: ["tech"],
