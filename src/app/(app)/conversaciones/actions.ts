@@ -4,6 +4,30 @@ import { requireRole } from "@/lib/auth/require-role";
 import { CAPABILITIES } from "@/lib/domain/shared/permissions";
 import { normalizePhone } from "@/lib/utils/phone";
 import { fetchGhlMessages, type GhlMessage } from "@/lib/ghl/api";
+import {
+  listConversationThreads,
+  type ConversationThread,
+  type ConversationThreadsPage,
+} from "@/lib/data/ghl-conversations.repository";
+
+/* ── Cargar más conversaciones (paginación) ── */
+export async function fetchMoreConversations(opts: {
+  startAfter: number | null;
+  startAfterId: string | null;
+  query?: string;
+}): Promise<ConversationThreadsPage & { ok: boolean; error?: string }> {
+  await requireRole(CAPABILITIES.viewConversations);
+  try {
+    const page = await listConversationThreads({
+      startAfter: opts.startAfter ?? undefined,
+      startAfterId: opts.startAfterId ?? undefined,
+      query: opts.query,
+    });
+    return { ok: true, ...page };
+  } catch (err) {
+    return { ok: false, error: String(err), threads: [], hasMore: false, startAfter: null, startAfterId: null };
+  }
+}
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 

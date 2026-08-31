@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/utils/phone";
-import { fetchGhlConversations } from "@/lib/ghl/api";
+import { fetchGhlConversations, type GhlConversation } from "@/lib/ghl/api";
 
 export type ConversationThread = {
   ghl_conversation_id: string;
@@ -16,11 +16,16 @@ export type ConversationThread = {
   student_id: string | null;
 };
 
-export async function listConversationThreads(): Promise<ConversationThread[]> {
-  const conversations = await fetchGhlConversations(100);
+export type ConversationThreadsPage = {
+  threads: ConversationThread[];
+  hasMore: boolean;
+  startAfter: number | null;
+  startAfterId: string | null;
+};
+
+async function enrichWithLeadStudent(conversations: GhlConversation[]): Promise<ConversationThread[]> {
   if (conversations.length === 0) return [];
 
-  // Recopilar teléfonos para buscar leads/alumnos en un solo query batch
   const phones = conversations
     .map((c) => (c.phone ? normalizePhone(c.phone) : null))
     .filter((p): p is string => p !== null);
@@ -32,11 +37,7 @@ export async function listConversationThreads(): Promise<ConversationThread[]> {
       ? supabase.from("leads").select("id, phone").in("phone", phones)
       : Promise.resolve({ data: [] as { id: string; phone: string | null }[] }),
     phones.length > 0
-      ? supabase
-          .from("students")
-          .select("id, phone")
-          .in("phone", phones)
-          .is("deleted_at", null)
+      ? supabase.from("students").select("id, phone").in("phone", phones).is("deleted_at", null)
       : Promise.resolve({ data: [] as { id: string; phone: string | null }[] }),
   ]);
 
@@ -58,4 +59,19 @@ export async function listConversationThreads(): Promise<ConversationThread[]> {
       student_id: cleanPhone ? (studentByPhone.get(cleanPhone) ?? null) : null,
     };
   });
+}
+
+export async function listConversationThreads(opts: {
+  startAfter?: number;
+  startAfterId?: string;
+  query?: string;
+} = {}): Promise<ConversationThreadsPage> {
+  const page = await fetchGhlConversations({ limit: 20, ...opts });
+  const threads = await enrichWithLeadStudent(page.conversations);
+  return {
+    threads,
+    hasMore: page.hasMore,
+    startAfter: page.startAfter,
+    startAfterId: page.startAfterId,
+  };
 }

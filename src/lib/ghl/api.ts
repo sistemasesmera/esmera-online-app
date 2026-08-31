@@ -40,18 +40,35 @@ export type GhlMessage = {
   userId: string | null;
 };
 
-export async function fetchGhlConversations(limit = 100): Promise<GhlConversation[]> {
+export type GhlConversationsPage = {
+  conversations: GhlConversation[];
+  hasMore: boolean;
+  startAfter: number | null;
+  startAfterId: string | null;
+};
+
+export async function fetchGhlConversations(opts: {
+  limit?: number;
+  startAfter?: number;
+  startAfterId?: string;
+  query?: string;
+} = {}): Promise<GhlConversationsPage> {
   const locationId = process.env.GHL_LOCATION_ID;
   if (!locationId) throw new Error("GHL_LOCATION_ID not set");
   if (!process.env.GHL_API_KEY) throw new Error("GHL_API_KEY not set");
 
+  const { limit = 20, startAfter, startAfterId, query } = opts;
+
   const url = new URL(`${GHL_API_BASE}/conversations/search`);
   url.searchParams.set("locationId", locationId);
   url.searchParams.set("limit", String(limit));
+  if (startAfter) url.searchParams.set("startAfter", String(startAfter));
+  if (startAfterId) url.searchParams.set("startAfterId", startAfterId);
+  if (query?.trim()) url.searchParams.set("q", query.trim());
 
   const res = await fetch(url.toString(), {
     headers: ghlHeaders(),
-    next: { revalidate: 30 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -61,7 +78,15 @@ export async function fetchGhlConversations(limit = 100): Promise<GhlConversatio
   }
 
   const data = await res.json();
-  return (data.conversations ?? []) as GhlConversation[];
+  const conversations = (data.conversations ?? []) as GhlConversation[];
+  const meta = data.meta ?? {};
+
+  return {
+    conversations,
+    hasMore: conversations.length === limit,
+    startAfter: meta.startAfter ?? null,
+    startAfterId: meta.startAfterId ?? null,
+  };
 }
 
 export async function fetchGhlMessages(conversationId: string, limit = 100): Promise<GhlMessage[]> {

@@ -8,12 +8,17 @@ import { ConversationsInbox } from "@/components/features/conversations/conversa
 
 export default async function ConversacionesPage() {
   await requireRole(CAPABILITIES.viewConversations);
-  const threads = await listConversationThreads();
+  const page = await listConversationThreads();
 
   return (
     <div className="flex flex-col h-[calc(100vh-5rem)] -mt-2">
       <h1 className="text-2xl font-black tracking-tight mb-4">Conversaciones</h1>
-      <ConversationsInbox threads={threads} />
+      <ConversationsInbox
+        initialThreads={page.threads}
+        initialHasMore={page.hasMore}
+        initialStartAfter={page.startAfter}
+        initialStartAfterId={page.startAfterId}
+      />
     </div>
   );
 }
