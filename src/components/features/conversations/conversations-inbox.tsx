@@ -352,9 +352,9 @@ function MessageBubble({ message }: { message: MessageDisplay }) {
 
         {/* Text body */}
         {message.mediaType === "text" ? (
-          <p className="whitespace-pre-wrap break-words leading-relaxed">{message.body}</p>
+          <p className={cn("whitespace-pre-wrap break-words leading-relaxed", !isInbound && "text-white")}>{message.body}</p>
         ) : message.attachments.length === 0 ? (
-          <p className="italic opacity-75">{message.body}</p>
+          <p className={cn("italic opacity-80", !isInbound && "text-white")}>{message.body}</p>
         ) : null}
 
         <p className={cn("text-[10px] mt-1 text-right", isInbound ? "text-muted-foreground" : "text-primary-foreground/70")}>
