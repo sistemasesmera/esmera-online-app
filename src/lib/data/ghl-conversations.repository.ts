@@ -1,86 +1,61 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-export type GhlMessage = {
-  id: string;
-  ghl_contact_id: string;
-  ghl_conversation_id: string | null;
-  contact_name: string | null;
-  contact_phone: string | null;
-  contact_email: string | null;
-  message_body: string;
-  message_type: string;
-  direction: string;
-  message_status: string | null;
-  lead_id: string | null;
-  student_id: string | null;
-  received_at: string;
-};
+import { normalizePhone } from "@/lib/utils/phone";
+import { fetchGhlConversations } from "@/lib/ghl/api";
 
 export type ConversationThread = {
+  ghl_conversation_id: string;
   ghl_contact_id: string;
-  ghl_conversation_id: string | null;
   contact_name: string | null;
   contact_phone: string | null;
   contact_email: string | null;
+  last_message: string | null;
+  last_message_at: string | null;
+  unread_count: number;
   lead_id: string | null;
   student_id: string | null;
-  message_type: string;
-  last_message: string;
-  last_message_at: string;
-  message_count: number;
-  messages: GhlMessage[];
 };
 
 export async function listConversationThreads(): Promise<ConversationThread[]> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const supabase = createAdminClient() as any;
+  const conversations = await fetchGhlConversations(100);
+  if (conversations.length === 0) return [];
 
-  const { data, error } = await supabase
-    .from("ghl_conversations")
-    .select(
-      "id, ghl_contact_id, ghl_conversation_id, contact_name, contact_phone, contact_email, message_body, message_type, direction, message_status, lead_id, student_id, received_at",
-    )
-    .order("received_at", { ascending: false })
-    .limit(500);
+  // Recopilar teléfonos para buscar leads/alumnos en un solo query batch
+  const phones = conversations
+    .map((c) => (c.phone ? normalizePhone(c.phone) : null))
+    .filter((p): p is string => p !== null);
 
-  if (error) throw new Error(error.message);
-  if (!data || data.length === 0) return [];
+  const supabase = createAdminClient();
 
-  const messages = data as GhlMessage[];
+  const [{ data: leads }, { data: students }] = await Promise.all([
+    phones.length > 0
+      ? supabase.from("leads").select("id, phone").in("phone", phones)
+      : Promise.resolve({ data: [] as { id: string; phone: string | null }[] }),
+    phones.length > 0
+      ? supabase
+          .from("students")
+          .select("id, phone")
+          .in("phone", phones)
+          .is("deleted_at", null)
+      : Promise.resolve({ data: [] as { id: string; phone: string | null }[] }),
+  ]);
 
-  // Group by ghl_contact_id, preserving insertion order (most recent first)
-  const map = new Map<string, ConversationThread>();
+  const leadByPhone = new Map((leads ?? []).map((l) => [l.phone, l.id]));
+  const studentByPhone = new Map((students ?? []).map((s) => [s.phone, s.id]));
 
-  for (const msg of messages) {
-    if (!map.has(msg.ghl_contact_id)) {
-      map.set(msg.ghl_contact_id, {
-        ghl_contact_id: msg.ghl_contact_id,
-        ghl_conversation_id: msg.ghl_conversation_id,
-        contact_name: msg.contact_name,
-        contact_phone: msg.contact_phone,
-        contact_email: msg.contact_email,
-        lead_id: msg.lead_id,
-        student_id: msg.student_id,
-        message_type: msg.message_type,
-        last_message: msg.message_body,
-        last_message_at: msg.received_at,
-        message_count: 0,
-        messages: [],
-      });
-    }
-    const thread = map.get(msg.ghl_contact_id)!;
-    thread.message_count++;
-    thread.messages.push(msg);
-  }
-
-  // Messages within each thread in chronological order for display
-  const threads = Array.from(map.values());
-  for (const thread of threads) {
-    thread.messages.sort(
-      (a, b) => new Date(a.received_at).getTime() - new Date(b.received_at).getTime(),
-    );
-  }
-
-  return threads;
+  return conversations.map((c) => {
+    const cleanPhone = c.phone ? normalizePhone(c.phone) : null;
+    return {
+      ghl_conversation_id: c.id,
+      ghl_contact_id: c.contactId,
+      contact_name: c.fullName ?? c.contactName ?? null,
+      contact_phone: cleanPhone,
+      contact_email: c.email ?? null,
+      last_message: c.lastMessage ?? null,
+      last_message_at: c.lastMessageDate ?? null,
+      unread_count: c.unreadCount ?? 0,
+      lead_id: cleanPhone ? (leadByPhone.get(cleanPhone) ?? null) : null,
+      student_id: cleanPhone ? (studentByPhone.get(cleanPhone) ?? null) : null,
+    };
+  });
 }
