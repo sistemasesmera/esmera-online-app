@@ -343,7 +343,11 @@ function MessageBubble({ message }: { message: GhlMessage }) {
           isPending && "opacity-60",
         )}
       >
-        <p className="whitespace-pre-wrap break-words leading-relaxed">{message.message_body}</p>
+        {isMediaPlaceholder(message.message_body) ? (
+          <p className="italic opacity-80">{message.message_body}</p>
+        ) : (
+          <p className="whitespace-pre-wrap break-words leading-relaxed">{message.message_body}</p>
+        )}
         <p
           className={cn(
             "text-[10px] mt-1 text-right",
@@ -402,6 +406,10 @@ function formatTimeAgo(iso: string): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d`;
   return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+}
+
+function isMediaPlaceholder(body: string): boolean {
+  return body.startsWith("🎤") || body.startsWith("🖼️") || body.startsWith("🎥") || body.startsWith("📄") || body.startsWith("📎");
 }
 
 function formatDateTime(iso: string): string {

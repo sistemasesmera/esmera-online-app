@@ -46,14 +46,13 @@ export async function POST(req: NextRequest) {
   const rawPhone = pick(body, ["phone", "phoneNumber", "phone_number"]);
   const contactEmail = pick(body, ["email"]);
 
-  const messageBody =
-    pickNested(body, "message", "body") ??
-    pick(body, ["message_body", "body", "text"]);
+  // GHL envía message.type como número para multimedia (19=audio, etc.)
+  const rawGhlType = pickNested(body, "message", "type") ?? pick(body, ["message_type", "channel", "type"]);
+  const messageType = resolveMessageType(rawGhlType);
 
-  const messageType =
-    pickNested(body, "message", "type") ??
-    pick(body, ["message_type", "channel", "type"]) ??
-    "WhatsApp";
+  const rawBody = pickNested(body, "message", "body") ?? pick(body, ["message_body", "body", "text"]);
+  // Para multimedia el body llega vacío — usamos un placeholder descriptivo
+  const messageBody = rawBody || mediaPlaceholder(rawGhlType);
 
   const direction =
     pickNested(body, "message", "direction") ??
@@ -130,6 +129,32 @@ export async function POST(req: NextRequest) {
 
   console.log(tag, "Message saved:", data.id, "| contact:", ghlContactId, "| lead:", leadId, "| student:", studentId);
   return Response.json({ ok: true, id: data.id }, { status: 201 });
+}
+
+/* ── GHL message type number → label ── */
+// type es un número interno de GHL para mensajes multimedia de WhatsApp
+function resolveMessageType(raw: string | null): string {
+  if (!raw) return "WhatsApp";
+  const n = Number(raw);
+  if (isNaN(n)) return raw; // ya era un string descriptivo
+  // tipos conocidos de GHL (WhatsApp)
+  if (n === 19) return "WhatsApp_Audio";
+  if (n === 10) return "WhatsApp_Image";
+  if (n === 11) return "WhatsApp_Video";
+  if (n === 12) return "WhatsApp_Document";
+  if (n === 8)  return "WhatsApp";
+  if (n === 1)  return "SMS";
+  if (n === 2)  return "Email";
+  return `WhatsApp_Media_${n}`;
+}
+
+function mediaPlaceholder(raw: string | null): string {
+  const n = Number(raw);
+  if (n === 19) return "🎤 Nota de voz";
+  if (n === 10) return "🖼️ Imagen";
+  if (n === 11) return "🎥 Vídeo";
+  if (n === 12) return "📄 Documento";
+  return "📎 Archivo multimedia";
 }
 
 /* ── helpers ── */
