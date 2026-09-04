@@ -109,6 +109,10 @@ export async function POST(req: NextRequest) {
   const pregunta2 = extract(body, ["en_que_momento_contactar", "pregunta2"]);
   const pregunta3 = extract(body, ["dispuesto_a_invertir", "pregunta3"]);
 
+  const pregunta1Label = extract(body, ["pregunta1_label"]);
+  const pregunta2Label = extract(body, ["pregunta2_label"]);
+  const pregunta3Label = extract(body, ["pregunta3_label"]);
+
   /* ── 4. Validar obligatorios ── */
   if (!fullName) {
     console.warn(tag, "Missing full_name in payload");
@@ -147,6 +151,9 @@ export async function POST(req: NextRequest) {
           pregunta1: pregunta1 ?? null,
           pregunta2: pregunta2 ?? null,
           pregunta3: pregunta3 ?? null,
+          pregunta1_label: pregunta1Label ?? null,
+          pregunta2_label: pregunta2Label ?? null,
+          pregunta3_label: pregunta3Label ?? null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", existingLead.id)
@@ -195,6 +202,9 @@ export async function POST(req: NextRequest) {
       pregunta1: pregunta1 ?? null,
       pregunta2: pregunta2 ?? null,
       pregunta3: pregunta3 ?? null,
+      pregunta1_label: pregunta1Label ?? null,
+      pregunta2_label: pregunta2Label ?? null,
+      pregunta3_label: pregunta3Label ?? null,
     })
     .select("id, full_name, phone, source, status")
     .single();

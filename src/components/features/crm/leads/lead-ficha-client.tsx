@@ -251,9 +251,9 @@ export function LeadFichaClient({
               {/* CRM */}
               <DetailRow label="Origen" value={LEAD_SOURCE_LABELS[lead.source]} />
               <DetailRow label="Curso de interés" value={lead.interested_course} />
-              <DetailRow label="Pregunta 1" value={lead.pregunta1} />
-              <DetailRow label="Pregunta 2" value={lead.pregunta2} />
-              <DetailRow label="Pregunta 3" value={lead.pregunta3} />
+              <DetailRow label={lead.pregunta1_label ?? "Pregunta 1"} value={lead.pregunta1} />
+              <DetailRow label={lead.pregunta2_label ?? "Pregunta 2"} value={lead.pregunta2} />
+              <DetailRow label={lead.pregunta3_label ?? "Pregunta 3"} value={lead.pregunta3} />
               <div className="py-2 border-b border-border/50 last:border-0">
                 <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Propietario</dt>
                 <dd className="text-sm font-medium mt-0.5">

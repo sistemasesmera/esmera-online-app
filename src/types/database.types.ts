@@ -712,8 +712,11 @@ export type Database = {
           phone: string | null
           postal_code: string | null
           pregunta1: string | null
+          pregunta1_label: string | null
           pregunta2: string | null
+          pregunta2_label: string | null
           pregunta3: string | null
+          pregunta3_label: string | null
           province: string | null
           source: Database["public"]["Enums"]["lead_source"]
           status: Database["public"]["Enums"]["lead_status"]
@@ -736,8 +739,11 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           pregunta1?: string | null
+          pregunta1_label?: string | null
           pregunta2?: string | null
+          pregunta2_label?: string | null
           pregunta3?: string | null
+          pregunta3_label?: string | null
           province?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]
@@ -760,8 +766,11 @@ export type Database = {
           phone?: string | null
           postal_code?: string | null
           pregunta1?: string | null
+          pregunta1_label?: string | null
           pregunta2?: string | null
+          pregunta2_label?: string | null
           pregunta3?: string | null
+          pregunta3_label?: string | null
           province?: string | null
           source?: Database["public"]["Enums"]["lead_source"]
           status?: Database["public"]["Enums"]["lead_status"]

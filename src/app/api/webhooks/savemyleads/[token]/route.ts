@@ -102,6 +102,10 @@ export async function POST(
   const pregunta2 = extract(body, ["en_que_momento_contactar", "pregunta2"]);
   const pregunta3 = extract(body, ["dispuesto_a_invertir", "pregunta3"]);
 
+  const pregunta1Label = extract(body, ["pregunta1_label"]);
+  const pregunta2Label = extract(body, ["pregunta2_label"]);
+  const pregunta3Label = extract(body, ["pregunta3_label"]);
+
   /* ── 4. Validar obligatorios ── */
   if (!fullName) {
     console.warn(tag, "Missing full_name in payload");
@@ -147,11 +151,14 @@ export async function POST(
       user_name:    "Meta Ads (automático)",
     });
 
-    const updateData: { interested_course?: string; pregunta1?: string; pregunta2?: string; pregunta3?: string } = {};
+    const updateData: { interested_course?: string; pregunta1?: string; pregunta2?: string; pregunta3?: string; pregunta1_label?: string; pregunta2_label?: string; pregunta3_label?: string } = {};
     if (courseChanged) updateData.interested_course = interestedCourse!;
     if (pregunta1) updateData.pregunta1 = pregunta1;
     if (pregunta2) updateData.pregunta2 = pregunta2;
     if (pregunta3) updateData.pregunta3 = pregunta3;
+    if (pregunta1Label) updateData.pregunta1_label = pregunta1Label;
+    if (pregunta2Label) updateData.pregunta2_label = pregunta2Label;
+    if (pregunta3Label) updateData.pregunta3_label = pregunta3Label;
     if (Object.keys(updateData).length) {
       await supabase.from("leads").update(updateData).eq("id", dupLead.id);
     }
@@ -173,6 +180,9 @@ export async function POST(
       pregunta1: pregunta1 ?? null,
       pregunta2: pregunta2 ?? null,
       pregunta3: pregunta3 ?? null,
+      pregunta1_label: pregunta1Label ?? null,
+      pregunta2_label: pregunta2Label ?? null,
+      pregunta3_label: pregunta3Label ?? null,
     })
     .select("id, full_name, phone, source, status")
     .single();
