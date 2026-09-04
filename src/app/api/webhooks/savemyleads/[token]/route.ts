@@ -147,8 +147,8 @@ export async function POST(
       user_name:    "Meta Ads (automático)",
     });
 
-    const updateData: Record<string, string | null> = {};
-    if (courseChanged) updateData.interested_course = interestedCourse;
+    const updateData: { interested_course?: string; pregunta1?: string; pregunta2?: string; pregunta3?: string } = {};
+    if (courseChanged) updateData.interested_course = interestedCourse!;
     if (pregunta1) updateData.pregunta1 = pregunta1;
     if (pregunta2) updateData.pregunta2 = pregunta2;
     if (pregunta3) updateData.pregunta3 = pregunta3;
