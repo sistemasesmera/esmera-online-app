@@ -9,6 +9,7 @@ import { convertLeadSchema, type ConvertLeadInput } from "@/lib/domain/students/
 import { CAPABILITIES, roleHasCapability } from "@/lib/domain/shared/permissions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { searchGhlOpportunitiesByPhone, updateGhlOpportunity } from "@/lib/ghl/api";
 import { normalizePhone } from "@/lib/utils/phone";
 import type { LeadSource } from "@/types/database.types";
 
@@ -356,11 +357,25 @@ export async function convertLeadToStudent(
     .eq("lead_id", leadId);
 
   // 5. Mark lead as converted
-  const { data: leadData } = await supabase.from("leads").select("full_name").eq("id", leadId).single();
+  const { data: leadData } = await supabase.from("leads").select("full_name, phone").eq("id", leadId).single();
   await supabase.from("leads").update({
     status: "convertido",
     converted_to_student_id: student.id,
   }).eq("id", leadId);
+
+  // 6. Marcar oportunidades de GHL como ganadas (best-effort, no bloquea si falla)
+  if (leadData?.phone) {
+    try {
+      const cleanPhone = normalizePhone(leadData.phone);
+      const opps = await searchGhlOpportunitiesByPhone(cleanPhone);
+      const matching = opps.filter(
+        (o) => o.contact.phone && normalizePhone(o.contact.phone) === cleanPhone && o.status === "open"
+      );
+      await Promise.all(matching.map((o) => updateGhlOpportunity(o.id, { status: "won" })));
+    } catch {
+      // silencioso — la conversión ya fue exitosa en Supabase
+    }
+  }
 
   const studentName = `${parsed.data.first_name} ${parsed.data.last_name}`;
   await logActivity({

@@ -3,6 +3,16 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/utils/phone";
 import { fetchGhlConversations, type GhlConversation } from "@/lib/ghl/api";
 
+function mediaPreview(type: number | null): string | null {
+  switch (type) {
+    case 19: return "🎤 Nota de voz";
+    case 10: return "🖼️ Imagen";
+    case 11: return "🎥 Vídeo";
+    case 12: return "📄 Documento";
+    default: return null;
+  }
+}
+
 export type ConversationThread = {
   ghl_conversation_id: string;
   ghl_contact_id: string;
@@ -52,7 +62,7 @@ async function enrichWithLeadStudent(conversations: GhlConversation[]): Promise<
       contact_name: c.fullName ?? c.contactName ?? null,
       contact_phone: cleanPhone,
       contact_email: c.email ?? null,
-      last_message: c.lastMessage ?? null,
+      last_message: c.lastMessageBody?.trim() || mediaPreview(c.messageTypes?.[0] ?? null),
       last_message_at: c.lastMessageDate ?? null,
       unread_count: c.unreadCount ?? 0,
       lead_id: cleanPhone ? (leadByPhone.get(cleanPhone) ?? null) : null,

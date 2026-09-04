@@ -98,6 +98,10 @@ export async function POST(
 
   const notes = extract(body, ["notes", "notas", "message", "comments", "mensaje"]);
 
+  const pregunta1 = extract(body, ["cuando_empezar", "pregunta1"]);
+  const pregunta2 = extract(body, ["en_que_momento_contactar", "pregunta2"]);
+  const pregunta3 = extract(body, ["dispuesto_a_invertir", "pregunta3"]);
+
   /* ── 4. Validar obligatorios ── */
   if (!fullName) {
     console.warn(tag, "Missing full_name in payload");
@@ -143,8 +147,13 @@ export async function POST(
       user_name:    "Meta Ads (automático)",
     });
 
-    if (courseChanged) {
-      await supabase.from("leads").update({ interested_course: interestedCourse }).eq("id", dupLead.id);
+    const updateData: Record<string, string | null> = {};
+    if (courseChanged) updateData.interested_course = interestedCourse;
+    if (pregunta1) updateData.pregunta1 = pregunta1;
+    if (pregunta2) updateData.pregunta2 = pregunta2;
+    if (pregunta3) updateData.pregunta3 = pregunta3;
+    if (Object.keys(updateData).length) {
+      await supabase.from("leads").update(updateData).eq("id", dupLead.id);
     }
 
     return Response.json({ ok: true, reentry: true, lead_id: dupLead.id });
@@ -161,6 +170,9 @@ export async function POST(
       status:    "nuevo",
       interested_course: interestedCourse ?? null,
       notes:     notes ?? null,
+      pregunta1: pregunta1 ?? null,
+      pregunta2: pregunta2 ?? null,
+      pregunta3: pregunta3 ?? null,
     })
     .select("id, full_name, phone, source, status")
     .single();

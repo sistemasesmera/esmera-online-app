@@ -63,8 +63,8 @@ export const CAPABILITIES = {
   // Conversaciones GHL (WhatsApp / SMS)
   viewConversations: ["tech", "jefe_comercial", "comercial", "administracion"],
 
-  // Informes / auditoría — solo administrador
-  viewReports: ["tech"],
+  // Informes / auditoría
+  viewReports: ["tech", "jefe_comercial", "administracion"],
   viewAuditLogs: ["tech"],
 } as const satisfies Record<string, readonly AppRole[]>;
 

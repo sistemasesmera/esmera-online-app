@@ -92,6 +92,18 @@ export async function getActivityByEnrollment(enrollmentId: string): Promise<Act
   return data ?? [];
 }
 
+export async function getActivityByOpportunity(opportunityId: string): Promise<ActivityLogRow[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("activity_logs")
+    .select("*")
+    .eq("entity_type", "opportunity")
+    .eq("entity_id", opportunityId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  return data ?? [];
+}
+
 export async function getAllActivity(limit = 200): Promise<ActivityLogRow[]> {
   const supabase = await createClient();
   const { data } = await supabase

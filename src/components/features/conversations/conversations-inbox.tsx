@@ -6,7 +6,7 @@ import {
 import Link from "next/link";
 import {
   MessageSquare, Search, Phone, Mail, User, GraduationCap,
-  Send, Loader2, RefreshCw,
+  Send, Loader2, RefreshCw, Mic, Square,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +17,9 @@ import type { ConversationThread } from "@/lib/data/ghl-conversations.repository
 import {
   loadConversationMessages,
   sendConversationMessage,
+  sendVoiceNote,
   fetchMoreConversations,
+  markConversationRead,
   type MessageDisplay,
 } from "@/app/(app)/conversaciones/actions";
 
@@ -49,6 +51,9 @@ export function ConversationsInbox({
 
   const scrollSentinelRef = useRef<HTMLDivElement>(null);
   const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const loadingMoreRef = useRef(false);
+  const cursorRef = useRef(cursor);
+  const searchRef = useRef(search);
 
   const active = threads.find((t) => t.ghl_conversation_id === selectedId) ?? null;
   const activeMessages = [
@@ -60,46 +65,61 @@ export function ConversationsInbox({
   useEffect(() => {
     if (searchTimeout.current) clearTimeout(searchTimeout.current);
     searchTimeout.current = setTimeout(async () => {
+      searchRef.current = search;
       setIsSearching(true);
       const result = await fetchMoreConversations({ startAfter: null, startAfterId: null, query: search || undefined });
       setIsSearching(false);
       if (result.ok) {
         setThreads(result.threads);
         setHasMore(result.hasMore);
-        setCursor({ startAfter: result.startAfter, startAfterId: result.startAfterId });
+        const newCursor = { startAfter: result.startAfter, startAfterId: result.startAfterId };
+        setCursor(newCursor);
+        cursorRef.current = newCursor;
         setSelectedId(result.threads[0]?.ghl_conversation_id ?? null);
       }
     }, 400);
     return () => { if (searchTimeout.current) clearTimeout(searchTimeout.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
-  /* ── Infinite scroll con IntersectionObserver ── */
+  /* ── Infinite scroll — observer se crea solo cuando hasMore cambia ── */
   useEffect(() => {
-    if (!hasMore || !scrollSentinelRef.current) return;
-    const observer = new IntersectionObserver(
-      async ([entry]) => {
-        if (!entry.isIntersecting || loadingMore) return;
-        setLoadingMore(true);
-        const result = await fetchMoreConversations({
-          startAfter: cursor.startAfter,
-          startAfterId: cursor.startAfterId,
-          query: search || undefined,
+    const sentinel = scrollSentinelRef.current;
+    if (!hasMore || !sentinel) return;
+
+    const observer = new IntersectionObserver(async ([entry]) => {
+      if (!entry.isIntersecting || loadingMoreRef.current) return;
+      loadingMoreRef.current = true;
+      setLoadingMore(true);
+
+      const result = await fetchMoreConversations({
+        startAfter: cursorRef.current.startAfter,
+        startAfterId: cursorRef.current.startAfterId,
+        query: searchRef.current || undefined,
+      });
+
+      setLoadingMore(false);
+      loadingMoreRef.current = false;
+
+      if (result.ok && result.threads.length > 0) {
+        setThreads((prev) => {
+          const seen = new Set(prev.map((t) => t.ghl_conversation_id));
+          return [...prev, ...result.threads.filter((t) => !seen.has(t.ghl_conversation_id))];
         });
-        setLoadingMore(false);
-        if (result.ok && result.threads.length > 0) {
-          setThreads((prev) => {
-            const existingIds = new Set(prev.map((t) => t.ghl_conversation_id));
-            return [...prev, ...result.threads.filter((t) => !existingIds.has(t.ghl_conversation_id))];
-          });
-          setHasMore(result.hasMore);
-          setCursor({ startAfter: result.startAfter, startAfterId: result.startAfterId });
-        }
-      },
-      { threshold: 1 },
-    );
-    observer.observe(scrollSentinelRef.current);
+        const newCursor = { startAfter: result.startAfter, startAfterId: result.startAfterId };
+        setCursor(newCursor);
+        cursorRef.current = newCursor;
+        setHasMore(result.hasMore);
+      } else {
+        setHasMore(false);
+      }
+    }, { threshold: 0.1 });
+
+    observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, loadingMore, cursor, search]);
+  // Solo recrear cuando hasMore cambia (true→false detiene el observer)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore]);
 
   /* ── Carga de mensajes ── */
   const loadMessages = useCallback(async (convId: string, force = false) => {
@@ -159,7 +179,17 @@ export function ConversationsInbox({
                   key={thread.ghl_conversation_id}
                   thread={thread}
                   isActive={thread.ghl_conversation_id === selectedId}
-                  onClick={() => setSelectedId(thread.ghl_conversation_id)}
+                  onClick={() => {
+                    setSelectedId(thread.ghl_conversation_id);
+                    if (thread.unread_count > 0) {
+                      setThreads((prev) => prev.map((t) =>
+                        t.ghl_conversation_id === thread.ghl_conversation_id
+                          ? { ...t, unread_count: 0 }
+                          : t
+                      ));
+                      markConversationRead(thread.ghl_conversation_id);
+                    }
+                  }}
                 />
               ))}
               {/* Infinite scroll sentinel */}
@@ -183,10 +213,17 @@ export function ConversationsInbox({
           loadError={loadError}
           onRefresh={() => loadMessages(active.ghl_conversation_id, true)}
           onMessageSent={(msg) => addOptimistic(active.ghl_conversation_id, msg)}
-          onAfterSend={() => {
+          onAfterSend={(sentMsg) => {
+            const convId = active.ghl_conversation_id;
+            setMessagesCache((prev) => ({
+              ...prev,
+              [convId]: [...(prev[convId] ?? []), { ...sentMsg, id: `sent-${Date.now()}` }],
+            }));
+            setOptimistic((prev) => ({ ...prev, [convId]: [] }));
+          }}
+          onSendFailed={() => {
             const convId = active.ghl_conversation_id;
             setOptimistic((prev) => ({ ...prev, [convId]: [] }));
-            loadMessages(convId, true);
           }}
         />
       ) : (
@@ -203,8 +240,8 @@ export function ConversationsInbox({
 function ThreadCard({ thread, isActive, onClick }: {
   thread: ConversationThread; isActive: boolean; onClick: () => void;
 }) {
-  const displayName = thread.contact_name ?? thread.contact_phone ?? "Desconocido";
-  const initials = displayName.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("");
+  const displayName = thread.contact_name?.trim() || thread.contact_phone || "Desconocido";
+  const initials = displayName.normalize("NFC").split(" ").slice(0, 2).map((w) => Array.from(w)[0]?.toUpperCase() ?? "").join("");
 
   return (
     <button onClick={onClick} className={cn(
@@ -223,14 +260,13 @@ function ThreadCard({ thread, isActive, onClick }: {
                 {thread.unread_count}
               </span>
             )}
-            <span className="text-[10px] text-muted-foreground">
+            <span suppressHydrationWarning className="text-[10px] text-muted-foreground">
               {thread.last_message_at ? formatTimeAgo(thread.last_message_at) : ""}
             </span>
           </div>
         </div>
         <p className="text-xs text-muted-foreground truncate">{thread.last_message ?? "Sin mensajes"}</p>
         <div className="flex items-center gap-1 mt-1">
-          <WhatsAppBadge />
           {thread.lead_id && (
             <Badge variant="outline" className="text-[10px] h-4 px-1 py-0 font-medium text-amber-600 border-amber-300">Lead</Badge>
           )}
@@ -244,38 +280,135 @@ function ThreadCard({ thread, isActive, onClick }: {
 }
 
 /* ── Thread detail ── */
-function ThreadDetail({ thread, messages, isLoading, loadError, onRefresh, onMessageSent, onAfterSend }: {
+function ThreadDetail({ thread, messages, isLoading, loadError, onRefresh, onMessageSent, onAfterSend, onSendFailed }: {
   thread: ConversationThread;
   messages: MessageDisplay[];
   isLoading: boolean;
   loadError: string | null;
   onRefresh: () => void;
   onMessageSent: (msg: MessageDisplay) => void;
-  onAfterSend: () => void;
+  onAfterSend: (sentMsg: MessageDisplay) => void;
+  onSendFailed: () => void;
 }) {
-  const displayName = thread.contact_name ?? thread.contact_phone ?? "Desconocido";
+  const displayName = thread.contact_name?.trim() || thread.contact_phone || "Desconocido";
   const [draft, setDraft] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Voice recording
+  const [recording, setRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelledRef = useRef(false);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  async function startRecording() {
+    setSendError(null);
+    // GHL solo acepta audio/mp4 o audio/mpeg — WebM y OGG son rechazados con 415
+    const mimeType =
+      MediaRecorder.isTypeSupported("audio/mp4;codecs=mp4a.40.2") ? "audio/mp4;codecs=mp4a.40.2" :
+      MediaRecorder.isTypeSupported("audio/mp4") ? "audio/mp4" :
+      null;
+
+    if (!mimeType) {
+      setSendError("Tu navegador no soporta grabación de voz compatible. Usa Chrome 90+ o Safari.");
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType });
+      audioChunksRef.current = [];
+      cancelledRef.current = false;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        if (cancelledRef.current) return;
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        await handleSendVoice(blob, mimeType);
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+    } catch {
+      setSendError("No se pudo acceder al micrófono");
+    }
+  }
+
+  function stopRecording() {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  }
+
+  function cancelRecording() {
+    cancelledRef.current = true;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    mediaRecorderRef.current?.stop();
+    setRecording(false);
+  }
+
+  async function handleSendVoice(blob: Blob, mimeType: string) {
+    const optimisticMsg: MessageDisplay = {
+      id: `opt-${Date.now()}`,
+      body: "🎤 Nota de voz",
+      direction: "outbound",
+      dateAdded: new Date().toISOString(),
+      attachments: [],
+      mediaType: "audio",
+    };
+    onMessageSent(optimisticMsg);
+
+    const ext = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
+    const formData = new FormData();
+    formData.append("ghlContactId", thread.ghl_contact_id);
+    formData.append("contactPhone", thread.contact_phone ?? "");
+    formData.append("conversationId", thread.ghl_conversation_id);
+    formData.append("audio", new File([blob], `voice-note.${ext}`, { type: mimeType }));
+
+    const result = await sendVoiceNote(formData);
+    if (!result.ok) {
+      setSendError(result.error ?? "Error enviando nota de voz");
+      onSendFailed();
+    } else {
+      onAfterSend(optimisticMsg);
+    }
+  }
 
   function handleSend() {
     const text = draft.trim();
     if (!text || isPending) return;
     setDraft("");
     setSendError(null);
-    onMessageSent({ id: `opt-${Date.now()}`, body: text, direction: "outbound", dateAdded: new Date().toISOString(), attachments: [], mediaType: "text" });
+    const optimisticMsg: MessageDisplay = {
+      id: `opt-${Date.now()}`,
+      body: text,
+      direction: "outbound",
+      dateAdded: new Date().toISOString(),
+      attachments: [],
+      mediaType: "text",
+    };
+    onMessageSent(optimisticMsg);
     startTransition(async () => {
       const result = await sendConversationMessage(thread.ghl_contact_id, thread.contact_phone, text);
       if (!result.ok) {
         setSendError(result.error ?? "Error al enviar");
+        onSendFailed();
       } else {
-        // Reemplazar optimistas con mensajes reales de GHL
-        onAfterSend();
+        onAfterSend(optimisticMsg);
       }
     });
   }
@@ -288,7 +421,7 @@ function ThreadDetail({ thread, messages, isLoading, loadError, onRefresh, onMes
           {displayName.split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || <MessageSquare className="h-4 w-4" />}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2"><span className="font-semibold text-sm">{displayName}</span><WhatsAppBadge /></div>
+          <div className="flex items-center gap-2"><span className="font-semibold text-sm">{displayName}</span></div>
           <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground flex-wrap">
             {thread.contact_phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{thread.contact_phone}</span>}
             {thread.contact_email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{thread.contact_email}</span>}
@@ -333,19 +466,38 @@ function ThreadDetail({ thread, messages, isLoading, loadError, onRefresh, onMes
       {/* Composer */}
       <div className="border-t bg-background px-4 py-3">
         {sendError && <p className="text-xs text-destructive mb-2">⚠ {sendError}</p>}
-        <div className="flex items-end gap-2">
-          <Textarea
-            placeholder="Escribe un mensaje… (Enter envía, Shift+Enter nueva línea)"
-            className="flex-1 min-h-[42px] max-h-32 resize-none text-sm"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            disabled={isPending}
-          />
-          <Button size="icon" onClick={handleSend} disabled={!draft.trim() || isPending} className="h-10 w-10 shrink-0">
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
+        {recording ? (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 flex-1 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+              <span className="text-sm text-red-600 font-medium">Grabando…</span>
+              <span className="text-sm text-red-500 font-mono ml-auto">{formatRecordingTime(recordingSeconds)}</span>
+            </div>
+            <Button size="icon" variant="ghost" onClick={cancelRecording} className="h-10 w-10 shrink-0 text-muted-foreground">
+              ✕
+            </Button>
+            <Button size="icon" onClick={stopRecording} className="h-10 w-10 shrink-0 bg-red-500 hover:bg-red-600">
+              <Square className="h-4 w-4 fill-white text-white" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-end gap-2">
+            <Textarea
+              placeholder="Escribe un mensaje… (Enter envía, Shift+Enter nueva línea)"
+              className="flex-1 min-h-[42px] max-h-32 resize-none text-sm"
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              disabled={isPending}
+            />
+            <Button size="icon" variant="outline" onClick={startRecording} disabled={isPending} className="h-10 w-10 shrink-0" title="Grabar nota de voz">
+              <Mic className="h-4 w-4" />
+            </Button>
+            <Button size="icon" onClick={handleSend} disabled={!draft.trim() || isPending} className="h-10 w-10 shrink-0">
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -411,15 +563,10 @@ function MediaAttachment({ attachments, mediaType, isInbound }: {
   );
 }
 
-/* ── WhatsApp badge ── */
-function WhatsAppBadge() {
-  return (
-    <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">
-      <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 fill-emerald-600">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-      </svg>WA
-    </span>
-  );
+function formatRecordingTime(seconds: number): string {
+  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
+  const s = (seconds % 60).toString().padStart(2, "0");
+  return `${m}:${s}`;
 }
 
 function formatTimeAgo(iso: string): string {

@@ -94,6 +94,93 @@ export async function loadConversationMessages(conversationId: string): Promise<
   }
 }
 
+/* ── Subir y enviar nota de voz via GHL ── */
+export async function sendVoiceNote(formData: FormData): Promise<{ ok: boolean; error?: string }> {
+  await requireRole(CAPABILITIES.viewConversations);
+
+  const apiKey = process.env.GHL_API_KEY;
+  const locationId = process.env.GHL_LOCATION_ID;
+  if (!apiKey || !locationId) return { ok: false, error: "Credenciales GHL no configuradas" };
+
+  const ghlContactId = formData.get("ghlContactId") as string;
+  const contactPhone = formData.get("contactPhone") as string;
+  const conversationId = formData.get("conversationId") as string;
+  const audioFile = formData.get("audio") as File;
+
+  if (!audioFile || audioFile.size === 0) return { ok: false, error: "Audio vacío" };
+
+  const toNumber = normalizePhone(contactPhone);
+  if (!toNumber) return { ok: false, error: "El contacto no tiene teléfono" };
+
+  // 1. Subir archivo a GHL
+  const uploadForm = new FormData();
+  uploadForm.append("locationId", locationId);
+  uploadForm.append("conversationId", conversationId);
+  const ext = audioFile.type.includes("mp4") ? "mp4" : audioFile.type.includes("ogg") ? "ogg" : "webm";
+  uploadForm.append("fileAttachment", audioFile, `voice-note.${ext}`);
+
+  const uploadRes = await fetch(`${GHL_API_BASE}/conversations/messages/upload`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, Version: "2021-04-15" },
+    body: uploadForm,
+  });
+
+  if (!uploadRes.ok) {
+    const err = await uploadRes.text();
+    console.error("[ghl/upload]", uploadRes.status, err);
+    return { ok: false, error: `Error subiendo archivo: ${uploadRes.status}` };
+  }
+
+  const uploadData = await uploadRes.json();
+  const fileUrl: string | undefined = Array.isArray(uploadData.uploadedFiles)
+    ? uploadData.uploadedFiles[0]
+    : Object.values(uploadData.uploadedFiles ?? {})[0] as string | undefined;
+  if (!fileUrl) return { ok: false, error: "GHL no devolvió URL del archivo" };
+
+  // 2. Enviar mensaje con el adjunto
+  const sendRes = await fetch(`${GHL_API_BASE}/conversations/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      Version: "2021-04-15",
+    },
+    body: JSON.stringify({
+      type: "WhatsApp",
+      contactId: ghlContactId,
+      toNumber,
+      attachments: [fileUrl],
+    }),
+  });
+
+  if (!sendRes.ok) {
+    const err = await sendRes.text();
+    console.error("[ghl/send-voice]", sendRes.status, err);
+    return { ok: false, error: `Error enviando nota: ${sendRes.status}` };
+  }
+
+  return { ok: true };
+}
+
+/* ── Marcar conversación como leída en GHL ── */
+export async function markConversationRead(conversationId: string): Promise<void> {
+  const apiKey = process.env.GHL_API_KEY;
+  if (!apiKey) return;
+  try {
+    await fetch(`${GHL_API_BASE}/conversations/${conversationId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Version: "2021-04-15",
+      },
+      body: JSON.stringify({ unreadCount: 0 }),
+    });
+  } catch {
+    // best-effort, no critical
+  }
+}
+
 /* ── Enviar mensaje via GHL API ── */
 export async function sendConversationMessage(
   ghlContactId: string,

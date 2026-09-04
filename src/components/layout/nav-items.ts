@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Code2,
   GraduationCap,
+  Kanban,
   LayoutDashboard,
   MessageSquare,
   Target,
@@ -42,6 +43,12 @@ export const NAV_SECTIONS: NavSection[] = [
         label: "Leads",
         href: "/crm/leads",
         icon: Target,
+        roles: ["tech", "jefe_comercial", "comercial"],
+      },
+      {
+        label: "Pipeline",
+        href: "/crm/opportunities",
+        icon: Kanban,
         roles: ["tech", "jefe_comercial", "comercial"],
       },
       {
