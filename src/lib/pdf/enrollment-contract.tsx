@@ -308,7 +308,7 @@ export function EnrollmentContractPDF({ data }: { data: EnrollmentContractData }
 
         <Text style={s.sectionTitle}>7. Política de desistimiento y bajas</Text>
         <Text style={s.clause}>
-          De conformidad con la normativa vigente, el/la alumno/a dispone de 14 días naturales desde la formalización de la matrícula para ejercer su derecho de desistimiento, siempre que no haya accedido al contenido formativo. Una vez iniciado el acceso a los contenidos, no procederá la devolución del importe abonado. En caso de baja voluntaria, el alumno/a deberá comunicarlo por escrito al centro.
+          De conformidad con la normativa vigente, el/la alumno/a dispone de 14 días naturales desde la formalización de la matrícula para ejercer su derecho de desistimiento, siempre que no haya accedido al contenido formativo. Una vez iniciado el acceso a los contenidos, no procederá la devolución del importe abonado.
         </Text>
 
         <Text style={s.sectionTitle}>8. Protección de datos personales</Text>
