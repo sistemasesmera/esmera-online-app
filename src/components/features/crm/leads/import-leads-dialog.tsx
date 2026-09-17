@@ -7,8 +7,6 @@ import { toast } from "sonner";
 import { importLeads, type ImportLeadRow, type ImportLeadsResult } from "@/app/(app)/crm/leads/actions";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { LEAD_SOURCE_LABELS, LEAD_SOURCES } from "@/lib/domain/leads/schema";
-import type { LeadSource } from "@/types/database.types";
 
 /* ── helpers ── */
 const normalizeStr = (s: string) =>
@@ -16,18 +14,11 @@ const normalizeStr = (s: string) =>
 
 const normalizeHeader = (h: unknown) => normalizeStr(String(h ?? ""));
 
-function resolveSource(raw: string): LeadSource | null {
-  const n = normalizeStr(raw);
-  if (LEAD_SOURCES.includes(n as LeadSource)) return n as LeadSource;
-  const match = (Object.entries(LEAD_SOURCE_LABELS) as [LeadSource, string][]).find(
-    ([, label]) => normalizeStr(label) === n
-  );
-  return match ? match[0] : null;
-}
-
 /* ── types ── */
 type ParsedRow = ImportLeadRow & { _row: number; _errors: string[] };
 type Step = "idle" | "preview" | "result";
+
+type ColKey = "full_name" | "email" | "phone" | "source" | "categoria" | "direccion" | "web";
 
 /* ══════════════════════════════════════════════════════════════ */
 export function ImportLeadsDialog({
@@ -74,18 +65,20 @@ export function ImportLeadsDialog({
     }
 
     const headers = (raw[0] as unknown[]).map(normalizeHeader);
-    const colIdx: Partial<Record<"full_name" | "email" | "phone" | "source" | "interested_course", number>> = {};
+    const colIdx: Partial<Record<ColKey, number>> = {};
 
     headers.forEach((h, i) => {
       if (["nombre", "full_name", "name"].includes(h)) colIdx.full_name = i;
       else if (["email", "correo"].includes(h)) colIdx.email = i;
       else if (["telefono", "phone", "tel", "movil"].includes(h)) colIdx.phone = i;
       else if (["origen", "source"].includes(h)) colIdx.source = i;
-      else if (["curso", "formulario", "interested_course"].some((k) => h.includes(k))) colIdx.interested_course = i;
+      else if (["categoria", "categoría"].includes(h)) colIdx.categoria = i;
+      else if (["direccion", "dirección", "address"].includes(h)) colIdx.direccion = i;
+      else if (["web", "pagina web", "página web", "website", "url"].some((k) => h.includes(k))) colIdx.web = i;
     });
 
-    if (colIdx.full_name === undefined || colIdx.phone === undefined || colIdx.source === undefined) {
-      toast.error("Faltan columnas obligatorias: Nombre, Teléfono y Origen");
+    if (colIdx.full_name === undefined || colIdx.phone === undefined) {
+      toast.error("Faltan columnas obligatorias: Nombre y Teléfono");
       return;
     }
 
@@ -95,19 +88,23 @@ export function ImportLeadsDialog({
         const errs: string[] = [];
         const full_name = String(row[colIdx.full_name!] ?? "").trim();
         const phone = String(row[colIdx.phone!] ?? "").trim();
-        const sourceRaw = String(row[colIdx.source!] ?? "").trim();
-        const email = colIdx.email !== undefined ? String(row[colIdx.email] ?? "").trim() : undefined;
-        const interested_course =
-          colIdx.interested_course !== undefined
-            ? String(row[colIdx.interested_course] ?? "").trim()
-            : undefined;
+        const email = colIdx.email !== undefined ? String(row[colIdx.email] ?? "").trim() : "";
+
+        const sourceRaw = colIdx.source !== undefined ? String(row[colIdx.source] ?? "").trim() : "";
+        const source = sourceRaw || "otro";
+
+        const categoria = colIdx.categoria !== undefined ? String(row[colIdx.categoria] ?? "").trim() : "";
+        const direccion = colIdx.direccion !== undefined ? String(row[colIdx.direccion] ?? "").trim() : "";
+        const web = colIdx.web !== undefined ? String(row[colIdx.web] ?? "").trim() : "";
+
+        const noteParts: string[] = [];
+        if (categoria) noteParts.push(`Categoría: ${categoria}`);
+        if (direccion) noteParts.push(`Dirección: ${direccion}`);
+        if (web) noteParts.push(`Web: ${web}`);
+        const notes = noteParts.length > 0 ? noteParts.join(" | ") : undefined;
 
         if (!full_name) errs.push("Nombre requerido");
         if (!phone) errs.push("Teléfono requerido");
-
-        const resolved = sourceRaw ? resolveSource(sourceRaw) : null;
-        if (!sourceRaw) errs.push("Origen requerido");
-        else if (!resolved) errs.push(`Origen "${sourceRaw}" no válido`);
 
         return {
           _row: i + 2,
@@ -115,8 +112,9 @@ export function ImportLeadsDialog({
           full_name,
           email: email || undefined,
           phone,
-          source: resolved ?? sourceRaw,
-          interested_course: interested_course || undefined,
+          source,
+          interested_course: "Importación masiva excel",
+          notes,
         };
       });
 
@@ -129,22 +127,14 @@ export function ImportLeadsDialog({
     const wb = XLSX.utils.book_new();
 
     const dataWs = XLSX.utils.aoa_to_sheet([
-      ["Nombre", "Email", "Teléfono", "Origen", "Curso / Formulario de interés"],
-      ["Juan García", "juan@email.com", "612345678", "organico", "CSS Avanzado"],
-      ["María López", "", "634567890", "referido", ""],
+      ["Nombre", "Teléfono", "Categoría", "Dirección", "Página web", "Email"],
+      ["Juan García", "612345678", "Peluquería", "Calle Mayor 10, Madrid", "www.ejemplo.com", "juan@email.com"],
+      ["María López", "634567890", "Estética", "", "", ""],
     ]);
-    dataWs["!cols"] = [{ wch: 25 }, { wch: 25 }, { wch: 15 }, { wch: 18 }, { wch: 32 }];
+    dataWs["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 30 }, { wch: 25 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, dataWs, "Leads");
 
-    const refRows: [string, string][] = [
-      ["Valor (usar en Excel)", "Etiqueta"],
-      ...LEAD_SOURCES.map((s): [string, string] => [s, LEAD_SOURCE_LABELS[s]]),
-    ];
-    const refWs = XLSX.utils.aoa_to_sheet(refRows);
-    refWs["!cols"] = [{ wch: 22 }, { wch: 18 }];
-    XLSX.utils.book_append_sheet(wb, refWs, "Orígenes válidos");
-
-    XLSX.writeFile(wb, "plantilla-leads.xlsx");
+    XLSX.writeFile(wb, "plantilla-leads-importacion.xlsx");
   }
 
   function handleImport() {
@@ -156,6 +146,7 @@ export function ImportLeadsDialog({
         phone: row.phone,
         source: row.source,
         interested_course: row.interested_course,
+        notes: row.notes,
       }));
       const res = await importLeads(payload);
       setResult(res);
@@ -183,8 +174,8 @@ export function ImportLeadsDialog({
               <p className="font-semibold mb-2.5">
                 El Excel debe tener estas columnas en la primera fila:
               </p>
-              <div className="grid grid-cols-5 gap-1.5 text-xs mb-2">
-                {(["Nombre *", "Email", "Teléfono *", "Origen *", "Curso / Formulario"] as const).map((col) => (
+              <div className="grid grid-cols-3 gap-1.5 text-xs mb-3">
+                {(["Nombre *", "Teléfono *", "Categoría", "Dirección", "Página web", "Email"] as const).map((col) => (
                   <div
                     key={col}
                     className={`rounded px-2 py-1.5 text-center font-mono ${
@@ -198,26 +189,8 @@ export function ImportLeadsDialog({
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                * Obligatorios. Filas con teléfono duplicado se omiten automáticamente.
-              </p>
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold mb-2">
-                Valores válidos para{" "}
-                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Origen</code>:
-              </p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {LEAD_SOURCES.map((s) => (
-                  <div key={s} className="flex items-center gap-1.5 text-xs rounded border px-2.5 py-1.5 bg-background">
-                    <code className="font-mono text-primary/80 shrink-0">{s}</code>
-                    <span className="text-muted-foreground">— {LEAD_SOURCE_LABELS[s]}</span>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1.5">
-                Puedes usar la clave (<code className="bg-muted px-1 rounded">organico</code>) o la etiqueta (
-                <code className="bg-muted px-1 rounded">Orgánico</code>).
+                * Obligatorios. Categoría, Dirección y Página web se guardan juntos en Notas.
+                Los leads se importan con origen <code className="bg-muted px-1 rounded">Otro</code> y estado <code className="bg-muted px-1 rounded">Nuevo</code>.
               </p>
             </div>
 
@@ -264,15 +237,13 @@ export function ImportLeadsDialog({
             </div>
 
             <div className="overflow-auto flex-1 rounded-lg border text-xs min-h-0 max-h-[340px]">
-              <table className="w-full min-w-[620px]">
+              <table className="w-full min-w-[560px]">
                 <thead className="bg-muted/60 border-b sticky top-0 z-10">
                   <tr>
                     <th className="px-3 py-2 text-left font-semibold w-8">#</th>
                     <th className="px-3 py-2 text-left font-semibold">Nombre</th>
                     <th className="px-3 py-2 text-left font-semibold">Teléfono</th>
-                    <th className="px-3 py-2 text-left font-semibold">Origen</th>
-                    <th className="px-3 py-2 text-left font-semibold">Email</th>
-                    <th className="px-3 py-2 text-left font-semibold">Curso</th>
+                    <th className="px-3 py-2 text-left font-semibold">Notas</th>
                     <th className="px-3 py-2 text-left font-semibold">Estado</th>
                   </tr>
                 </thead>
@@ -291,16 +262,8 @@ export function ImportLeadsDialog({
                       <td className="px-3 py-2">
                         {row.phone || <span className="text-red-400">—</span>}
                       </td>
-                      <td className="px-3 py-2">
-                        {row.source ? (
-                          <code className="bg-muted px-1 rounded">{row.source}</code>
-                        ) : (
-                          <span className="text-red-400">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-muted-foreground">{row.email || "—"}</td>
-                      <td className="px-3 py-2 text-muted-foreground max-w-[130px] truncate">
-                        {row.interested_course || "—"}
+                      <td className="px-3 py-2 text-muted-foreground max-w-[220px] truncate">
+                        {row.notes || <span className="opacity-40">—</span>}
                       </td>
                       <td className="px-3 py-2">
                         {row._errors.length > 0 ? (

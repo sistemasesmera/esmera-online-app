@@ -19,6 +19,7 @@ export type ImportLeadRow = {
   phone: string;
   source: string;
   interested_course?: string;
+  notes?: string;
 };
 
 export type ImportLeadsResult = {
@@ -442,10 +443,10 @@ export async function importLeads(rows: ImportLeadRow[]): Promise<ImportLeadsRes
 
     if (!row.full_name?.trim()) { errors.push({ row: rowNum, reason: "Nombre requerido" }); continue; }
     if (!row.phone?.trim()) { errors.push({ row: rowNum, reason: "Teléfono requerido" }); continue; }
-    if (!LEAD_SOURCES.includes(row.source as LeadSource)) {
-      errors.push({ row: rowNum, reason: `Origen inválido: "${row.source}"` });
-      continue;
-    }
+
+    const resolvedSource: LeadSource = LEAD_SOURCES.includes(row.source as LeadSource)
+      ? (row.source as LeadSource)
+      : "otro";
 
     const cleanPhone = normalizePhone(row.phone.trim());
     if (existingPhones.has(cleanPhone)) { skipped++; continue; }
@@ -454,11 +455,12 @@ export async function importLeads(rows: ImportLeadRow[]): Promise<ImportLeadsRes
       .from("leads")
       .insert({
         full_name: row.full_name.trim(),
-        source: row.source as LeadSource,
+        source: resolvedSource,
         status: "nuevo" as const,
         email: row.email?.trim() || null,
         phone: cleanPhone,
         interested_course: row.interested_course?.trim() || null,
+        notes: row.notes?.trim() || null,
         owner_id: currentUser.id,
       })
       .select("id")
