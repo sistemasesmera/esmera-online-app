@@ -410,7 +410,7 @@ export async function convertLeadToStudent(
 
 export async function importLeads(rows: ImportLeadRow[]): Promise<ImportLeadsResult> {
   if (!rows.length) return { imported: 0, skipped: 0, errors: [] };
-  if (rows.length > 1000) return { imported: 0, skipped: 0, errors: [{ row: 0, reason: "Máximo 1000 filas por importación" }] };
+  if (rows.length > 10000) return { imported: 0, skipped: 0, errors: [{ row: 0, reason: "Máximo 10.000 filas por importación" }] };
 
   let currentUser;
   try {
