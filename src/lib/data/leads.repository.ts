@@ -17,7 +17,8 @@ export async function listLeads(): Promise<LeadWithJoins[]> {
       .from("leads")
       .select("*, users!owner_id(full_name)")
       .neq("status", "convertido")
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(10000),
     supabase
       .from("lead_interactions")
       .select("lead_id")
