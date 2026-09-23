@@ -18,7 +18,9 @@ const normalizeHeader = (h: unknown) => normalizeStr(String(h ?? ""));
 type ParsedRow = ImportLeadRow & { _row: number; _errors: string[] };
 type Step = "idle" | "preview" | "result";
 
-type ColKey = "full_name" | "email" | "phone" | "source" | "categoria" | "direccion" | "web";
+const WENDY_ID = "1f394242-7c85-4a64-b93d-ed15da83c5d9";
+
+type ColKey = "full_name" | "email" | "phone" | "source" | "usuario" | "curso" | "fecha_creacion";
 
 /* ══════════════════════════════════════════════════════════════ */
 export function ImportLeadsDialog({
@@ -72,9 +74,9 @@ export function ImportLeadsDialog({
       else if (["email", "correo"].includes(h)) colIdx.email = i;
       else if (["telefono", "phone", "tel", "movil"].includes(h)) colIdx.phone = i;
       else if (["origen", "source"].includes(h)) colIdx.source = i;
-      else if (["categoria", "categoría"].includes(h)) colIdx.categoria = i;
-      else if (["direccion", "dirección", "address"].includes(h)) colIdx.direccion = i;
-      else if (["web", "pagina web", "página web", "website", "url"].some((k) => h.includes(k))) colIdx.web = i;
+      else if (["usuario"].includes(h)) colIdx.usuario = i;
+      else if (["curso"].includes(h)) colIdx.curso = i;
+      else if (["fecha de creacion", "fecha_creacion", "fecha de creación", "fecha creacion"].includes(h)) colIdx.fecha_creacion = i;
     });
 
     if (colIdx.full_name === undefined || colIdx.phone === undefined) {
@@ -93,14 +95,14 @@ export function ImportLeadsDialog({
         const sourceRaw = colIdx.source !== undefined ? String(row[colIdx.source] ?? "").trim() : "";
         const source = sourceRaw || "otro";
 
-        const categoria = colIdx.categoria !== undefined ? String(row[colIdx.categoria] ?? "").trim() : "";
-        const direccion = colIdx.direccion !== undefined ? String(row[colIdx.direccion] ?? "").trim() : "";
-        const web = colIdx.web !== undefined ? String(row[colIdx.web] ?? "").trim() : "";
+        const usuario = colIdx.usuario !== undefined ? String(row[colIdx.usuario] ?? "").trim() : "";
+        const curso = colIdx.curso !== undefined ? String(row[colIdx.curso] ?? "").trim() : "";
+        const fecha_creacion = colIdx.fecha_creacion !== undefined ? String(row[colIdx.fecha_creacion] ?? "").trim() : "";
 
         const noteParts: string[] = [];
-        if (categoria) noteParts.push(`Categoría: ${categoria}`);
-        if (direccion) noteParts.push(`Dirección: ${direccion}`);
-        if (web) noteParts.push(`Web: ${web}`);
+        if (usuario) noteParts.push(`Usuario: ${usuario}`);
+        if (curso) noteParts.push(`Curso: ${curso}`);
+        if (fecha_creacion) noteParts.push(`Fecha de Creación: ${fecha_creacion}`);
         const notes = noteParts.length > 0 ? noteParts.join(" | ") : undefined;
 
         if (!full_name) errs.push("Nombre requerido");
@@ -113,7 +115,8 @@ export function ImportLeadsDialog({
           email: email || undefined,
           phone,
           source,
-          interested_course: "Importación masiva excel",
+          interested_course: "Cursos vendidos por wendy",
+          owner_id: WENDY_ID,
           notes,
         };
       });
@@ -127,11 +130,11 @@ export function ImportLeadsDialog({
     const wb = XLSX.utils.book_new();
 
     const dataWs = XLSX.utils.aoa_to_sheet([
-      ["Nombre", "Teléfono", "Categoría", "Dirección", "Página web", "Email"],
-      ["Juan García", "612345678", "Peluquería", "Calle Mayor 10, Madrid", "www.ejemplo.com", "juan@email.com"],
-      ["María López", "634567890", "Estética", "", "", ""],
+      ["Nombre", "Teléfono", "Usuario", "Curso", "Fecha de Creacion"],
+      ["Juan García", "612345678", "Wendy Florez", "Corte y Color", "01/01/2025"],
+      ["María López", "634567890", "Wendy Florez", "Estética Avanzada", "15/03/2025"],
     ]);
-    dataWs["!cols"] = [{ wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 30 }, { wch: 25 }, { wch: 25 }];
+    dataWs["!cols"] = [{ wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 20 }];
     XLSX.utils.book_append_sheet(wb, dataWs, "Leads");
 
     XLSX.writeFile(wb, "plantilla-leads-importacion.xlsx");
@@ -175,7 +178,7 @@ export function ImportLeadsDialog({
                 El Excel debe tener estas columnas en la primera fila:
               </p>
               <div className="grid grid-cols-3 gap-1.5 text-xs mb-3">
-                {(["Nombre *", "Teléfono *", "Categoría", "Dirección", "Página web", "Email"] as const).map((col) => (
+                {(["Nombre *", "Teléfono *", "Usuario", "Curso", "Fecha de Creacion"] as const).map((col) => (
                   <div
                     key={col}
                     className={`rounded px-2 py-1.5 text-center font-mono ${
@@ -189,8 +192,8 @@ export function ImportLeadsDialog({
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                * Obligatorios. Categoría, Dirección y Página web se guardan juntos en Notas.
-                Los leads se importan con origen <code className="bg-muted px-1 rounded">Otro</code> y estado <code className="bg-muted px-1 rounded">Nuevo</code>.
+                * Obligatorios. Usuario, Curso y Fecha de Creación se guardan en Notas.
+                Los leads se importan asignados a <code className="bg-muted px-1 rounded">Wendy Florez</code> con estado <code className="bg-muted px-1 rounded">Nuevo</code>.
               </p>
             </div>
 

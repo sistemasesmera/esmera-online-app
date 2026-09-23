@@ -20,6 +20,7 @@ export type ImportLeadRow = {
   source: string;
   interested_course?: string;
   notes?: string;
+  owner_id?: string;
 };
 
 export type ImportLeadsResult = {
@@ -461,7 +462,7 @@ export async function importLeads(rows: ImportLeadRow[]): Promise<ImportLeadsRes
         phone: cleanPhone,
         interested_course: row.interested_course?.trim() || null,
         notes: row.notes?.trim() || null,
-        owner_id: currentUser.id,
+        owner_id: row.owner_id ?? currentUser.id,
       })
       .select("id")
       .single();
