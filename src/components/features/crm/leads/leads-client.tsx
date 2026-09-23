@@ -757,12 +757,10 @@ function LeadKanbanCard({
               <span className="font-medium">Creado:</span>{" "}
               {new Date(lead.created_at).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
             </p>
-            {lead.updated_at && lead.updated_at !== lead.created_at && (
-              <p className="text-xs text-muted-foreground/60">
-                <span className="font-medium">Actualizado:</span>{" "}
-                {new Date(lead.updated_at).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-              </p>
-            )}
+            <p className="text-xs text-muted-foreground/60">
+              <span className="font-medium">Actualizado:</span>{" "}
+              {new Date(lead.updated_at ?? lead.created_at).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
           </div>
         )}
 
