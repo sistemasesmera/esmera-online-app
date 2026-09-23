@@ -115,7 +115,7 @@ export function ImportLeadsDialog({
           email: email || undefined,
           phone,
           source,
-          interested_course: "Cursos vendidos por wendy",
+          interested_course: "Importacion alumnos de 1ene/2025 a 23sept/2026",
           owner_id: WENDY_ID,
           notes,
         };
