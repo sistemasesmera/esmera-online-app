@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/utils/phone";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const LEAD_SOURCES = ["web", "meta_ads", "organico", "referido", "redes_sociales", "llamada_entrante", "evento", "agente_web", "otro"] as const;
 
@@ -9,6 +10,9 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, x-api-key, Authorization",
 };
+
+// ID del usuario sistema que firma las notas automáticas (sistemas@esmeraschool.com)
+const SYSTEM_USER_ID = "3f961910-a5ae-4851-bd44-a336aeb26a3b";
 
 export async function OPTIONS() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
@@ -21,6 +25,15 @@ function authenticate(req: NextRequest): boolean {
   return auth === key;
 }
 
+async function insertNota(supabase: SupabaseClient, leadId: string, text: string) {
+  const { error } = await supabase.from("lead_interactions").insert({
+    lead_id: leadId,
+    user_id: SYSTEM_USER_ID,
+    contact_type: "nota_interna",
+    notes: text,
+  });
+  if (error) console.error("[public/leads]", "Error inserting nota_interna:", error.message);
+}
 
 export async function POST(req: NextRequest) {
   if (!authenticate(req)) {
@@ -49,35 +62,53 @@ export async function POST(req: NextRequest) {
   const cleanPhone = normalizePhone(String(phone).trim());
   const supabase = createAdminClient();
 
-  // Check duplicate lead by phone
-  const { data: existingLead } = await supabase
-    .from("leads")
-    .select("id")
-    .eq("phone", cleanPhone)
-    .maybeSingle();
+  const [{ data: existingLead }, { data: existingStudent }] = await Promise.all([
+    supabase.from("leads").select("id, status").eq("phone", cleanPhone).maybeSingle(),
+    supabase.from("students").select("id").eq("phone", cleanPhone).is("deleted_at", null).maybeSingle(),
+  ]);
+
+  // Ya es alumno — aceptar silenciosamente sin exponer datos
+  if (existingStudent) {
+    return Response.json({ ok: true, skipped: true }, { status: 200, headers: CORS_HEADERS });
+  }
 
   if (existingLead) {
-    return Response.json(
-      { error: "duplicate_lead", message: "Este teléfono ya está registrado." },
-      { status: 409, headers: CORS_HEADERS }
-    );
+    const cursoInfo = interested_course ? ` interesado/a en ${String(interested_course).trim()}` : "";
+    const now = new Date().toISOString();
+
+    if (existingLead.status === "descartado") {
+      // Reactivar: volver a "nuevo" + actualizar datos + nota interna
+      const { data: lead, error } = await supabase
+        .from("leads")
+        .update({
+          full_name: String(full_name).trim(),
+          email: email ? String(email).trim() : null,
+          status: "nuevo",
+          interested_course: interested_course ? String(interested_course).trim() : null,
+          updated_at: now,
+        })
+        .eq("id", existingLead.id)
+        .select("id, full_name, phone, source, status")
+        .single();
+
+      if (error) {
+        return Response.json({ error: error.message }, { status: 500, headers: CORS_HEADERS });
+      }
+
+      await insertNota(supabase, lead.id, `Lead reactivado — nueva solicitud recibida vía web${cursoInfo}.`);
+      return Response.json({ ok: true, lead, reactivated: true }, { status: 200, headers: CORS_HEADERS });
+    }
+
+    // Lead activo — nota interna + actualizar updated_at sin tocar estado ni asignación
+    await Promise.all([
+      supabase.from("leads").update({ updated_at: now }).eq("id", existingLead.id),
+      insertNota(supabase, existingLead.id, `Nueva solicitud recibida vía web${cursoInfo} (lead en estado "${existingLead.status}").`),
+    ]);
+
+    return Response.json({ ok: true, skipped: true, reason: "active_lead" }, { status: 200, headers: CORS_HEADERS });
   }
 
-  // Check duplicate student by phone
-  const { data: existingStudent } = await supabase
-    .from("students")
-    .select("id")
-    .eq("phone", cleanPhone)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (existingStudent) {
-    return Response.json(
-      { error: "already_student", message: "Este teléfono ya está registrado." },
-      { status: 409, headers: CORS_HEADERS }
-    );
-  }
-
+  // Lead nuevo — insertar
   const { data, error } = await supabase
     .from("leads")
     .insert({
