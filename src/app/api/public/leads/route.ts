@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
   // Ya es alumno — aceptar silenciosamente sin exponer datos
   if (existingStudent) {
-    return Response.json({ ok: true, skipped: true }, { status: 200, headers: CORS_HEADERS });
+    return Response.json({ ok: true, skipped: true }, { status: 201, headers: CORS_HEADERS });
   }
 
   if (existingLead) {
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       }
 
       await insertNota(supabase, lead.id, `Lead reactivado — nueva solicitud recibida vía web${cursoInfo}.`);
-      return Response.json({ ok: true, lead, reactivated: true }, { status: 200, headers: CORS_HEADERS });
+      return Response.json({ ok: true, lead, reactivated: true }, { status: 201, headers: CORS_HEADERS });
     }
 
     // Lead activo — nota interna + actualizar updated_at sin tocar estado ni asignación
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
       insertNota(supabase, existingLead.id, `Nueva solicitud recibida vía web${cursoInfo} (lead en estado "${existingLead.status}").`),
     ]);
 
-    return Response.json({ ok: true, skipped: true, reason: "active_lead" }, { status: 200, headers: CORS_HEADERS });
+    return Response.json({ ok: true, skipped: true, reason: "active_lead" }, { status: 201, headers: CORS_HEADERS });
   }
 
   // Lead nuevo — insertar
