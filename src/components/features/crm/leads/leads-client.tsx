@@ -67,7 +67,7 @@ export const KANBAN_FIELD_LABELS: Record<KanbanField, string> = {
   source:            "Origen",
   interested_course: "Curso de interés",
   owner:             "Comercial asignado",
-  created_at:        "Fecha de creación",
+  created_at:        "Fechas (creación / actualización)",
   notes:             "Notas",
   discard_reason:    "Motivo de descarte",
 };
@@ -750,11 +750,20 @@ function LeadKanbanCard({
           )
         )}
 
-        {/* Fecha de creación */}
+        {/* Fechas creación / actualización */}
         {show("created_at") && (
-          <p className="text-xs text-muted-foreground/60">
-            {new Date(lead.created_at).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-          </p>
+          <div className="flex flex-col gap-0.5">
+            <p className="text-xs text-muted-foreground/60">
+              <span className="font-medium">Creado:</span>{" "}
+              {new Date(lead.created_at).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+            </p>
+            {lead.updated_at && lead.updated_at !== lead.created_at && (
+              <p className="text-xs text-muted-foreground/60">
+                <span className="font-medium">Actualizado:</span>{" "}
+                {new Date(lead.updated_at).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+              </p>
+            )}
+          </div>
         )}
 
         {/* Notas */}
