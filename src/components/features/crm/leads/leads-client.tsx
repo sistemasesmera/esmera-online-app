@@ -213,10 +213,11 @@ export function LeadsClient({
   const [ownerFilter, setOwnerFilter] = useState("");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isPendingAssign, startAssignTransition] = useTransition();
+  const [courseFilter, setCourseFilter] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:leads");
 
-  useEffect(() => { setPageIndex(0); }, [search, statusFilter, hideDiscarded, sortOrder, pageSize, ownerFilter]);
+  useEffect(() => { setPageIndex(0); }, [search, statusFilter, hideDiscarded, sortOrder, pageSize, ownerFilter, courseFilter]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -258,6 +259,10 @@ export function LeadsClient({
     ["comercial", "jefe_comercial"].includes(u.role as string) && u.is_active
   );
 
+  const availableCourses = Array.from(
+    new Set(leads.map((l) => l.interested_course).filter(Boolean))
+  ).sort() as string[];
+
   const unassignedCount = leads.filter((l) => !l.owner_id).length;
 
   const counts = Object.fromEntries(
@@ -277,7 +282,8 @@ export function LeadsClient({
       (l.phone ?? "").toLowerCase().includes(search.toLowerCase());
     const matchStatus = !statusFilter || l.status === (statusFilter as LeadStatus);
     const matchOwner = !ownerFilter || l.owner_id === ownerFilter;
-    return matchSearch && matchStatus && matchOwner;
+    const matchCourse = !courseFilter || l.interested_course === courseFilter;
+    return matchSearch && matchStatus && matchOwner && matchCourse;
   });
 
   const sorted = [...filtered].sort((a, b) => {
@@ -407,6 +413,18 @@ export function LeadsClient({
                   <option value="">Todos los comerciales</option>
                   {comerciales.map((u) => (
                     <option key={u.id} value={u.id}>{u.full_name}</option>
+                  ))}
+                </select>
+              )}
+              {availableCourses.length > 0 && (
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  value={courseFilter}
+                  onChange={(e) => setCourseFilter(e.target.value)}
+                >
+                  <option value="">Todos los cursos</option>
+                  {availableCourses.map((c) => (
+                    <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
               )}
