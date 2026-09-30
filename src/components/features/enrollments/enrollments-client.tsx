@@ -132,6 +132,7 @@ export function EnrollmentsClient({
   const [createOpen, setCreateOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<EnrollmentStatus | "">("");
+  const [courseFilter, setCourseFilter] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize, setPageSize] = usePersistedPageSize("esmera:pageSize:enrollments");
   const [activating, setActivating] = useState<EnrollmentWithStudent | null>(null);
@@ -140,7 +141,15 @@ export function EnrollmentsClient({
   const [tutorId, setTutorId] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => { setPageIndex(0); }, [search, statusFilter, pageSize]);
+  useEffect(() => { setPageIndex(0); }, [search, statusFilter, courseFilter, pageSize]);
+
+  const availableCourses = Array.from(
+    new Map(
+      enrollments
+        .filter((e) => e.courses && e.course_id)
+        .map((e) => [e.course_id, { id: e.course_id, name: e.courses!.name }])
+    ).values()
+  ).sort((a, b) => a.name.localeCompare(b.name));
 
   const counts = Object.fromEntries(
     PIPELINE_STEPS.map(({ status }) => [
@@ -155,7 +164,8 @@ export function EnrollmentsClient({
       e.students?.full_name.toLowerCase().includes(search.toLowerCase()) ||
       e.courses?.name.toLowerCase().includes(search.toLowerCase());
     const matchStatus = !statusFilter || e.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchCourse = !courseFilter || e.course_id === courseFilter;
+    return matchSearch && matchStatus && matchCourse;
   });
 
   const pageCount = Math.ceil(filtered.length / pageSize);
@@ -245,20 +255,34 @@ export function EnrollmentsClient({
           onSearchChange={setSearch}
           searchPlaceholder="Buscar por alumno o curso…"
           filters={
-            viewMode === "table" ? (
-              <select
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as EnrollmentStatus | "")}
-              >
-                <option value="">Todos los estados</option>
-                {ALL_STATUSES.map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            ) : undefined
+            <div className="flex items-center gap-2 flex-wrap">
+              {viewMode === "table" && (
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as EnrollmentStatus | "")}
+                >
+                  <option value="">Todos los estados</option>
+                  {ALL_STATUSES.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {availableCourses.length > 0 && (
+                <select
+                  className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  value={courseFilter}
+                  onChange={(e) => setCourseFilter(e.target.value)}
+                >
+                  <option value="">Todos los cursos</option>
+                  {availableCourses.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
           }
           actions={
             <div className="flex items-center gap-2">
@@ -311,12 +335,13 @@ export function EnrollmentsClient({
       {/* Kanban view */}
       {viewMode === "kanban" && (
         <KanbanBoard
-          key={search}
+          key={search + courseFilter}
           enrollments={enrollments.filter(
             (e) =>
-              !search ||
-              e.students?.full_name.toLowerCase().includes(search.toLowerCase()) ||
-              e.courses?.name.toLowerCase().includes(search.toLowerCase())
+              (!search ||
+                e.students?.full_name.toLowerCase().includes(search.toLowerCase()) ||
+                e.courses?.name.toLowerCase().includes(search.toLowerCase())) &&
+              (!courseFilter || e.course_id === courseFilter)
           )}
           canEdit={canEdit}
           onTransition={handleTransition}
