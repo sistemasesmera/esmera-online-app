@@ -175,7 +175,7 @@ export function EnrollmentsClient({
     if (next === "activa") {
       setActivating(enrollment);
       setPlatformId(enrollment.platform_id ?? "");
-      setTutorId(enrollment.tutor_id ?? "");
+      setTutorId("");
       return;
     }
     startTransition(async () => {
@@ -188,7 +188,7 @@ export function EnrollmentsClient({
   function handleAssignTutor(enrollment: EnrollmentWithStudent) {
     setAssigning(enrollment);
     setPlatformId(enrollment.platform_id ?? "");
-    setTutorId(enrollment.tutor_id ?? "");
+    setTutorId("");
   }
 
   function handleSaveAssignment() {
