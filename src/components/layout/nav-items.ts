@@ -4,6 +4,7 @@ import {
   BookMarked,
   BookOpen,
   Bot,
+  BarChart2,
   ClipboardList,
   Code2,
   GraduationCap,
@@ -92,6 +93,7 @@ export const NAV_SECTIONS: NavSection[] = [
     label: "General",
     items: [
       { label: "Notificaciones", href: "/notifications", icon: Bell, roles: ALL_ROLES },
+      { label: "Reportes", href: "/reportes", icon: BarChart2, roles: ["tech", "jefe_comercial", "administracion"] },
     ],
   },
   {

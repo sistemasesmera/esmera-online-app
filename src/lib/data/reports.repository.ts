@@ -1,5 +1,43 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import type { LeadStatus } from "@/types/database.types";
+
+export type LeadsPerOwnerRow = {
+  owner_id: string | null;
+  owner_name: string;
+  total: number;
+  by_status: Record<LeadStatus, number>;
+};
+
+export async function getLeadsPerOwnerReport(from: string, to: string): Promise<LeadsPerOwnerRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("leads")
+    .select("id, status, owner_id, users!owner_id(full_name)")
+    .gte("created_at", `${from}T00:00:00`)
+    .lte("created_at", `${to}T23:59:59`);
+
+  if (error) throw new Error(error.message);
+
+  const map = new Map<string, LeadsPerOwnerRow>();
+  for (const lead of data ?? []) {
+    const key = lead.owner_id ?? "__unassigned__";
+    const ownerName = (lead.users as { full_name: string } | null)?.full_name ?? "Sin asignar";
+    if (!map.has(key)) {
+      map.set(key, {
+        owner_id: lead.owner_id,
+        owner_name: ownerName,
+        total: 0,
+        by_status: { nuevo: 0, en_contacto: 0, oferta_enviada: 0, convertido: 0, descartado: 0 },
+      });
+    }
+    const row = map.get(key)!;
+    row.total++;
+    row.by_status[lead.status as LeadStatus] = (row.by_status[lead.status as LeadStatus] ?? 0) + 1;
+  }
+
+  return Array.from(map.values()).sort((a, b) => b.total - a.total);
+}
 
 export type ContractReportRow = {
   id: string;
