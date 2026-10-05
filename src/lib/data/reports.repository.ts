@@ -14,7 +14,7 @@ export async function getLeadsPerOwnerReport(from: string, to: string): Promise<
   const { data, error } = await supabase
     .from("leads")
     .select("id, status, owner_id, users!owner_id(full_name)")
-    .neq("source", "otro")
+    .eq("source", "meta_ads")
     .gte("created_at", `${from}T00:00:00`)
     .lte("created_at", `${to}T23:59:59`);
 

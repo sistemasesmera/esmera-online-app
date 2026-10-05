@@ -23,7 +23,7 @@ export default async function ReportesPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-black tracking-tight">Reportes</h1>
-        <p className="text-sm text-muted-foreground mt-1">Leads asignados por vendedor</p>
+        <p className="text-sm text-muted-foreground mt-1">Leads de Meta Ads por vendedor</p>
       </div>
       <LeadsPerOwnerClient rows={rows} from={resolvedFrom} to={resolvedTo} />
     </div>
