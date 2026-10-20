@@ -1,5 +1,6 @@
 "use client";
 
+import * as XLSX from "xlsx";
 import {
   CheckCircle,
   Download,
@@ -311,16 +312,10 @@ export function LeadsClient({
       l.users?.full_name ?? "",
       new Date(l.created_at).toLocaleDateString("es-ES"),
     ]);
-    const csv = [headers, ...rows]
-      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
-      .join("\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Leads");
+    XLSX.writeFile(wb, `leads-${new Date().toISOString().slice(0, 10)}.xlsx`);
   }
 
   function handleAssign(newOwnerId: string) {
