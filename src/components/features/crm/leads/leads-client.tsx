@@ -2,6 +2,7 @@
 
 import {
   CheckCircle,
+  Download,
   Globe,
   KanbanSquare,
   Leaf,
@@ -298,6 +299,30 @@ export function LeadsClient({
 
   const columns = getLeadColumns(canAssign);
 
+  function handleExportCSV() {
+    const headers = ["Nombre completo", "Email", "Teléfono", "Origen", "Curso de interés", "Estado", "Comercial", "Fecha de entrada"];
+    const rows = sorted.map((l) => [
+      l.full_name,
+      l.email ?? "",
+      l.phone ?? "",
+      LEAD_SOURCE_LABELS[l.source] ?? l.source,
+      l.interested_course ?? "",
+      LEAD_STATUS_LABELS[l.status] ?? l.status,
+      l.users?.full_name ?? "",
+      new Date(l.created_at).toLocaleDateString("es-ES"),
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   function handleAssign(newOwnerId: string) {
     startAssignTransition(async () => {
       const result = await assignLeads(selectedIds, newOwnerId);
@@ -508,6 +533,11 @@ export function LeadsClient({
                 </PopoverContent>
               </Popover>
             )}
+
+            <Button size="sm" variant="outline" onClick={handleExportCSV} title="Exportar leads en Oferta enviada a CSV">
+              <Download className="mr-1 h-4 w-4" />
+              Exportar CSV
+            </Button>
 
             {canEdit && (
               <>
